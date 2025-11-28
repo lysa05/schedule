@@ -1,0 +1,80 @@
+{
+    "closed_holidays": [
+        25,
+        26
+    ],
+    "open_holidays": [
+        24
+    ],
+    "special_days": {
+        "24": {
+            "close": "12:00",
+            "staff": 1
+        },
+        "31": {
+            "close": "17:00",
+            "staff": 2
+        }
+    },
+    "employees": [
+        {
+            "name": "Kuba",
+            "hours_fund": 184,
+            "unavailable_days": [
+                31
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Andrii",
+            "hours_fund": 184,
+            "unavailable_days": [
+                4,
+                5,
+                11,
+                12,
+                18,
+                19,
+                22,
+                23,
+                24
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Almaz",
+            "hours_fund": 184,
+            "unavailable_days": [],
+            "vacation_days": []
+        },
+        {
+            "name": "Misa",
+            "hours_fund": 92,
+            "unavailable_days": [
+                3,
+                5,
+                6,
+                7,
+                10,
+                17,
+                24,
+                27,
+                28
+            ],
+            "vacation_days": [
+                29,
+                30,
+                31
+            ]
+        },
+        {
+            "name": "Alenka",
+            "hours_fund": 92,
+            "unavailable_days": [
+                5
+            ],
+            "vacation_days": []
+        }
+    ],
+    "month_days": 31
+}
