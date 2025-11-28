@@ -1,0 +1,118 @@
+{
+    "year": 2025,
+    "month": 12,
+    "full_time_hours": 184,
+    "config": {
+        "auto_staffing": true,
+        "busy_weekends": true,
+        "min_openers": 1,
+        "min_closers": 1
+    },
+    "closed_holidays": [
+        25,
+        26
+    ],
+    "open_holidays": [
+        24
+    ],
+    "special_days": {
+        "24": {
+            "close": "12:00",
+            "staff": 2
+        },
+        "31": {
+            "close": "17:00",
+            "staff": 3
+        }
+    },
+    "employees": [
+        {
+            "name": "Kuba",
+            "contract_type": 1.0,
+            "unavailable_days": [
+                6,
+                7,
+                20,
+                21
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Andrii",
+            "contract_type": 1.0,
+            "unavailable_days": [
+                13,
+                14,
+                27,
+                28
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Almaz",
+            "contract_type": 1.0,
+            "unavailable_days": [
+                1,
+                8,
+                15,
+                22,
+                29
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Misa",
+            "contract_type": 0.5,
+            "unavailable_days": [
+                2,
+                3,
+                9,
+                10,
+                16,
+                17,
+                23,
+                30
+            ],
+            "vacation_days": [
+                29,
+                30,
+                31
+            ]
+        },
+        {
+            "name": "Alenka",
+            "contract_type": 0.5,
+            "unavailable_days": [
+                4,
+                5,
+                11,
+                12,
+                18,
+                19
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Aleska",
+            "contract_type": 0.75,
+            "unavailable_days": [
+                6,
+                13,
+                20,
+                27
+            ],
+            "vacation_days": []
+        },
+        {
+            "name": "Danik",
+            "contract_type": 0.75,
+            "unavailable_days": [
+                7,
+                14,
+                21,
+                28
+            ],
+            "vacation_days": []
+        }
+    ]
+}
