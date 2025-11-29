@@ -21,7 +21,7 @@ const ROLES: { value: Role; label: string }[] = [
     { value: "assistant", label: "Assistant" },
 ];
 
-const CONTRACTS = [1.0, 0.9, 0.75, 0.5];
+const CONTRACTS = [1.0, 0.75, 0.5];
 
 export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
     fulltimeHours, setFulltimeHours,
