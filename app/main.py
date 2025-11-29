@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
-import scheduler_ortools
+from . import scheduler
 
 app = FastAPI()
 
@@ -63,7 +63,7 @@ async def solve_schedule(request: ScheduleRequest):
     # So it should be fine.
     
     try:
-        result = scheduler_ortools.solve_schedule(data)
+        result = scheduler.solve_schedule(data)
         if result.get("status") not in ("OPTIMAL", "FEASIBLE"):
              raise HTTPException(status_code=400, detail=f"No solution found: {result.get('status')}")
         return result
