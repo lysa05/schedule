@@ -135,13 +135,38 @@ def generate_shift_templates(day, special_days):
     # Duration every 1 hour: 6, 7, 8, 9, 10, 11
     for start in [10.0, 11.0, 12.0, 13.0]:
         for duration in [6.0, 7.0, 8.0, 9.0, 10.0, 11.0]:
+            # FLEX cannot start before 10:00 (already covered by loop range, but good to be explicit if range changes)
+            if start < 10.0:
+                continue
+                
             end = start + duration
+            
+            # FLEX cannot end after 20:00 (Strict Middle)
+            if end > 20.0:
+                continue
+            
             if end <= close_time:
                 # Flex shifts are discouraged but allowed if needed for balance
+                # Base cost based on duration
                 if duration >= 8.0:
-                    cost = 15 # Moderate cost (was 50)
+                    base_cost = 0 # Free (was 15) - Encourage use!
                 else:
-                    cost = 50 # Higher cost for short flex (was 150)
+                    base_cost = 20 # Low penalty (was 50)
+                    
+                # Time Preference: Ideal 10:00 - 19:00
+                # Penalize late starts and late ends
+                ideal_start = 10.0
+                ideal_end = 19.0
+                time_penalty = 0
+                
+                if start > ideal_start:
+                    time_penalty += int((start - ideal_start) * 5)
+                    
+                if end > ideal_end:
+                    time_penalty += int((end - ideal_end) * 5)
+                    
+                cost = base_cost + time_penalty
+                
                 templates.append({'type': 'FLEX', 'start': start, 'end': end, 'duration': duration, 'cost': cost})
                 
     return templates
@@ -263,9 +288,19 @@ def solve_schedule(data_file):
         # Day Shape Soft Constraints
         o_day = model.NewIntVar(0, req_staff, f'openers_day_{day}')
         c_day = model.NewIntVar(0, req_staff, f'closers_day_{day}')
+        m_day = model.NewIntVar(0, req_staff, f'middles_day_{day}') # New: Middle count
         
         model.Add(o_day == sum(openers))
         model.Add(c_day == sum(closers))
+        
+        # Calculate middles sum
+        middles = []
+        for i in range(len(employees)):
+            for s_idx, template in enumerate(day_templates[day]):
+                if (i, day, s_idx) in work:
+                    if template['type'] == 'FLEX':
+                        middles.append(work[(i, day, s_idx)])
+        model.Add(m_day == sum(middles))
         
         # Open deviation
         o_diff = model.NewIntVar(-req_staff, req_staff, f'o_diff_{day}')
@@ -279,7 +314,14 @@ def solve_schedule(data_file):
         model.Add(c_diff == c_day - target_close)
         model.AddAbsEquality(c_abs, c_diff)
         
-        day_shape_vars.extend([o_abs, c_abs])
+        # Middle deviation
+        target_middle = req_staff - target_open - target_close
+        m_diff = model.NewIntVar(-req_staff, req_staff, f'm_diff_{day}')
+        m_abs = model.NewIntVar(0, req_staff, f'm_abs_{day}')
+        model.Add(m_diff == m_day - target_middle)
+        model.AddAbsEquality(m_abs, m_diff)
+        
+        day_shape_vars.extend([o_abs, c_abs, m_abs])
         
     # 3. Consecutive Days (Max 4)
     # Optimization: Create worked_day variables once
@@ -442,10 +484,10 @@ def solve_schedule(data_file):
     # Weighting:
     # 1. Hours Deviation (Weight 1000) - Absolute Priority
     # 2. Day Shape (Weight 40) - Strong preference for 38/38/24 split (Increased from 10)
-    # 3. Shift Costs (Weight 10) - Reduced from 20 to allow Flex shifts to win
+    # 3. Shift Costs (Weight 5) - Reduced from 10 to allow Flex shifts to win
     # 4. Fairness (Weight 5) - Tie-breaker
     
-    model.Minimize(sum(obj_vars) * 1000 + sum(cost_vars) * 10 + sum(day_shape_vars) * 40 + sum(fairness_vars) * 5)
+    model.Minimize(sum(obj_vars) * 1000 + sum(cost_vars) * 5 + sum(day_shape_vars) * 40 + sum(fairness_vars) * 5)
     
     # Solve
     print("Solving...")
