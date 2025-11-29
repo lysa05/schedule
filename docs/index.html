@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Scheduler</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Shift Scheduler</h1>
+            <p>Configure your team and generate optimal schedules.</p>
+        </header>
+        
+        <main>
+            <section class="input-section">
+                <div class="section-header">
+                    <h2>Configuration (JSON)</h2>
+                    <button id="generateBtn" class="primary-btn">Generate Schedule</button>
+                </div>
+                <textarea id="jsonInput" spellcheck="false"></textarea>
+            </section>
+            
+            <section class="output-section">
+                <div class="section-header">
+                    <h2>Schedule</h2>
+                    <div id="statusIndicator" class="status">Ready</div>
+                </div>
+                <div id="statsContainer" class="stats-container"></div>
+                <div id="scheduleContainer" class="schedule-container">
+                    <div class="placeholder-text">Click "Generate Schedule" to see results here.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
