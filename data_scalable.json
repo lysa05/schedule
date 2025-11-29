@@ -2,11 +2,36 @@
     "year": 2025,
     "month": 12,
     "full_time_hours": 184,
+    "heavy_days": {
+        "15": {
+            "extra_staff": 2
+        },
+        "24": {
+            "extra_staff": 3
+        },
+        "29": {
+            "extra_staff": 1
+        }
+    },
+    "weights": {
+        "work_hours": 1000,
+        "day_shape": 80,
+        "shift_cost": 5,
+        "open_close_fairness": 3,
+        "clopen": 15
+    },
     "config": {
         "auto_staffing": true,
         "busy_weekends": true,
         "min_openers": 1,
-        "min_closers": 1
+        "min_closers": 1,
+        "open_ratio": 0.4,
+        "close_ratio": 0.4,
+        "manager_roles": [
+            "manager",
+            "deputy",
+            "supervisor"
+        ]
     },
     "closed_holidays": [
         25,
@@ -28,6 +53,7 @@
     "employees": [
         {
             "name": "Kuba",
+            "role": "manager",
             "contract_type": 1.0,
             "unavailable_days": [
                 6,
@@ -39,6 +65,7 @@
         },
         {
             "name": "Andrii",
+            "role": "deputy",
             "contract_type": 1.0,
             "unavailable_days": [
                 13,
@@ -50,6 +77,7 @@
         },
         {
             "name": "Almaz",
+            "role": "supervisor",
             "contract_type": 1.0,
             "unavailable_days": [
                 1,
@@ -62,6 +90,7 @@
         },
         {
             "name": "Misa",
+            "role": "staff",
             "contract_type": 0.5,
             "unavailable_days": [
                 2,
@@ -81,6 +110,7 @@
         },
         {
             "name": "Alenka",
+            "role": "staff",
             "contract_type": 0.5,
             "unavailable_days": [
                 4,
@@ -94,6 +124,7 @@
         },
         {
             "name": "Aleska",
+            "role": "staff",
             "contract_type": 0.75,
             "unavailable_days": [
                 6,
@@ -105,6 +136,7 @@
         },
         {
             "name": "Danik",
+            "role": "staff",
             "contract_type": 0.75,
             "unavailable_days": [
                 7,
