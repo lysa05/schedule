@@ -62,13 +62,13 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
                                         onClick={() => toggleDay(day, 'unavailable')}
                                         className={`text-[10px] py-1 px-2 rounded transition-colors ${isUnavailable ? 'bg-red-100 text-red-700 font-medium' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'}`}
                                     >
-                                        Unavailable
+                                        OFF
                                     </button>
                                     <button
                                         onClick={() => toggleDay(day, 'vacation')}
                                         className={`text-[10px] py-1 px-2 rounded transition-colors ${isVacation ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'}`}
                                     >
-                                        Vacation
+                                        VAC
                                     </button>
                                 </div>
                             );

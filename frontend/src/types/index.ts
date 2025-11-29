@@ -45,6 +45,9 @@ export type DayType = "normal" | "busy" | "holiday_closed" | "holiday_open" | "h
 export interface SpecialDayInput {
     day: number;
     type: DayType;
+    openTime?: string;
+    closeTime?: string;
+    staffOverride?: number;
 }
 
 export type Role = "manager" | "deputy" | "supervisor" | "visual_merchandiser" | "assistant";
@@ -63,6 +66,8 @@ export interface SolveRequest {
     month: number;
     year: number;
     fulltimeHours: number;
+    defaultOpenTime: string;
+    defaultCloseTime: string;
     employees: EmployeeInput[];
     specialDays: SpecialDayInput[];
     config: {

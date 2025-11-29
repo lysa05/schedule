@@ -17,6 +17,9 @@ app.add_middleware(
 class SpecialDayInput(BaseModel):
     day: int
     type: str  # "normal", "busy", "holiday_closed", "holiday_open", "holiday_short"
+    openTime: Optional[str] = None
+    closeTime: Optional[str] = None
+    staffOverride: Optional[int] = None
 
 class EmployeeInput(BaseModel):
     id: str
@@ -34,6 +37,8 @@ class SolveRequest(BaseModel):
     month: int
     year: int
     fulltimeHours: float
+    defaultOpenTime: str
+    defaultCloseTime: str
     employees: List[EmployeeInput]
     specialDays: List[SpecialDayInput]
     config: ConfigInput
@@ -69,16 +74,23 @@ def transform_request(req: SolveRequest) -> Dict[str, Any]:
             closed_holidays.append(sd.day)
         elif sd.type == "holiday_open":
             open_holidays.append(sd.day)
-            # Standard holiday hours assumption
-            special_days[day_str] = {"close": "17:00", "staff": 3}
+            # Use provided times or defaults
+            special_days[day_str] = {
+                "close": sd.closeTime or "17:00", 
+                "open": sd.openTime or "08:30",
+                "staff": sd.staffOverride or 3
+            }
         elif sd.type == "holiday_short":
-            open_holidays.append(sd.day) # Treat as open holiday but with specific short hours
-            special_days[day_str] = {"close": "16:00", "staff": 2} # Shorter than open
+            open_holidays.append(sd.day)
+            special_days[day_str] = {
+                "close": sd.closeTime or "16:00", 
+                "open": sd.openTime or "08:30",
+                "staff": sd.staffOverride or 2
+            }
         elif sd.type == "busy":
             heavy_days[day_str] = {"extra_staff": 2}
 
     # 3. Config
-    # Map frontend config to backend config
     backend_config = {
         "auto_staffing": req.config.autoStaffing,
         "busy_weekends": req.config.busyWeekends,
@@ -86,8 +98,9 @@ def transform_request(req: SolveRequest) -> Dict[str, Any]:
         "min_closers": 1,
         "open_ratio": 0.4,
         "close_ratio": 0.4,
-        # Always enforce manager on Mondays
-        "manager_roles": ["manager", "deputy", "supervisor"]
+        "manager_roles": ["manager", "deputy", "supervisor"],
+        "default_open_time": req.defaultOpenTime,
+        "default_close_time": req.defaultCloseTime
     }
     
     # 4. Weights (Defaults)

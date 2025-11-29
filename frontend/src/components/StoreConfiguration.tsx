@@ -17,7 +17,7 @@ const ROLES: { value: Role; label: string }[] = [
     { value: "manager", label: "Manager" },
     { value: "deputy", label: "Deputy" },
     { value: "supervisor", label: "Supervisor" },
-    { value: "visual_merchandiser", label: "Visual Merchandiser" },
+    { value: "visual_merchandiser", label: "VM" },
     { value: "assistant", label: "Assistant" },
 ];
 
@@ -163,10 +163,6 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
                     >
                         + Add employee
                     </button>
-
-                    <p className="text-xs text-slate-400 italic max-w-xs text-right">
-                        Mondays always require at least one Manager / Deputy / Supervisor on shift.
-                    </p>
                 </div>
             </div>
 
@@ -174,22 +170,6 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
             <div className="border-t border-slate-100 pt-4">
                 <h3 className="text-sm font-semibold text-slate-900 mb-3">Staffing rules</h3>
                 <div className="flex flex-col gap-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                        <div className="relative inline-flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={config.autoStaffing}
-                                onChange={(e) => setConfig({ ...config, autoStaffing: e.target.checked })}
-                                className="sr-only peer"
-                            />
-                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                        </div>
-                        <div>
-                            <span className="text-sm font-medium text-slate-700">Use automatic staffing rules</span>
-                            <p className="text-xs text-slate-500">Use built-in rules for balancing opens, middles and closes.</p>
-                        </div>
-                    </label>
-
                     <label className="flex items-center gap-3 cursor-pointer">
                         <div className="relative inline-flex items-center">
                             <input
@@ -202,7 +182,7 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
                         </div>
                         <div>
                             <span className="text-sm font-medium text-slate-700">Treat weekends as busier days</span>
-                            <p className="text-xs text-slate-500">If enabled, Saturdays and Sundays will be treated as busy days.</p>
+                            <p className="text-xs text-slate-500">If enabled, Saturdays and Sundays will be staffed more heavily than weekdays.</p>
                         </div>
                     </label>
                 </div>

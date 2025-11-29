@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { PeriodSelector } from './components/PeriodSelector';
 import { SpecialDaysCalendar } from './components/SpecialDaysCalendar';
 import { StoreConfiguration } from './components/StoreConfiguration';
 import { GenerateSection } from './components/GenerateSection';
@@ -15,6 +14,8 @@ const App: React.FC = () => {
   const [year] = useState(new Date().getFullYear());
 
   const [specialDays, setSpecialDays] = useState<SpecialDayInput[]>([]);
+  const [defaultOpenTime, setDefaultOpenTime] = useState("08:30");
+  const [defaultCloseTime, setDefaultCloseTime] = useState("21:00");
 
   const [fulltimeHours, setFulltimeHours] = useState(184);
   const [employees, setEmployees] = useState<EmployeeInput[]>([
@@ -43,6 +44,8 @@ const App: React.FC = () => {
         month,
         year,
         fulltimeHours,
+        defaultOpenTime,
+        defaultCloseTime,
         employees,
         specialDays,
         config
@@ -75,22 +78,21 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Shift Scheduler</h1>
         </div>
 
         {/* Steps */}
-        <PeriodSelector
-          month={month}
-          year={year}
-          onChange={setMonth}
-        />
-
         <SpecialDaysCalendar
           month={month}
           year={year}
+          setMonth={setMonth}
           specialDays={specialDays}
           onChange={setSpecialDays}
+          defaultOpenTime={defaultOpenTime}
+          setDefaultOpenTime={setDefaultOpenTime}
+          defaultCloseTime={defaultCloseTime}
+          setDefaultCloseTime={setDefaultCloseTime}
         />
 
         <StoreConfiguration
