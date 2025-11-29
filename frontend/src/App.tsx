@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { SpecialDaysCalendar } from './components/SpecialDaysCalendar';
 import { StoreConfiguration } from './components/StoreConfiguration';
 import { GenerateSection } from './components/GenerateSection';
@@ -33,11 +33,15 @@ const App: React.FC = () => {
   const [results, setResults] = useState<SolveResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
     setResults(null);
+    setShowToast(false);
 
     try {
       const payload: SolveRequest = {
@@ -66,6 +70,17 @@ const App: React.FC = () => {
 
       const data: SolveResponse = await response.json();
       setResults(data);
+      setShowToast(true);
+
+      // Auto-scroll to results
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
 
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -75,7 +90,17 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8 relative">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg z-50 animate-fade-in-down flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="font-medium">Schedule generated. Scroll down to see results.</span>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center mb-6">
@@ -114,7 +139,7 @@ const App: React.FC = () => {
 
         {/* Results */}
         {results && (
-          <div className="animate-fade-in pt-4">
+          <div ref={resultsRef} className="animate-fade-in pt-4">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Results</h2>
             <ResultsView results={results} month={month} year={year} />
           </div>

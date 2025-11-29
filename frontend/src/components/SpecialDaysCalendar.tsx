@@ -18,9 +18,11 @@ const MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ];
 
-// Generate time options from 08:00 to 23:00 in 30 min increments
-const TIME_OPTIONS = Array.from({ length: 31 }, (_, i) => {
-    const totalMinutes = 8 * 60 + i * 30; // Start at 8:00
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Generate time options from 06:00 to 23:00 in 30 min increments
+const TIME_OPTIONS = Array.from({ length: 35 }, (_, i) => {
+    const totalMinutes = 6 * 60 + i * 30; // Start at 06:00
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60 === 0 ? "00" : "30";
     return `${h.toString().padStart(2, '0')}:${m}`;
@@ -84,6 +86,11 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
         }
     };
 
+    const getWeekday = (day: number) => {
+        const date = new Date(year, month - 1, day);
+        return WEEKDAYS[date.getDay()];
+    };
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex flex-col gap-4 mb-6">
@@ -144,23 +151,29 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                 {days.map(day => {
                     const data = getDayData(day);
                     const isOpen = openPopover === day;
+                    const weekday = getWeekday(day);
 
                     return (
                         <div key={day} className="relative">
                             <button
                                 onClick={() => setOpenPopover(isOpen ? null : day)}
                                 className={`
-                  w-full aspect-square rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all p-1
+                  w-full aspect-square rounded-lg border flex flex-col items-center justify-start pt-1 gap-0.5 transition-all
                   ${getDayColor(data.type)}
                   ${isOpen ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}
                 `}
                             >
-                                <span className="font-semibold text-lg leading-none">{day}</span>
-                                <span className="text-[9px] uppercase font-bold tracking-wider opacity-80 leading-tight">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="font-semibold text-lg leading-none">{day}</span>
+                                    <span className="text-[10px] text-slate-500 font-medium">{weekday}</span>
+                                </div>
+
+                                <span className="text-[9px] uppercase font-bold tracking-wider opacity-80 leading-tight mt-1">
                                     {getDayLabel(data.type)}
                                 </span>
+
                                 {data.type === 'holiday_short' && (
-                                    <div className="flex flex-col items-center mt-1">
+                                    <div className="flex flex-col items-center mt-0.5">
                                         <span className="text-[9px] font-medium leading-tight opacity-90">
                                             {data.openTime || defaultOpenTime}–{data.closeTime || defaultCloseTime}
                                         </span>
@@ -213,19 +226,18 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                                 <select
                                                     value={data.closeTime || defaultCloseTime}
                                                     onChange={(e) => {
-                                                        // Simple validation: ensure close is after open? 
-                                                        // For now just let user pick, backend/logic handles it or user self-corrects.
-                                                        // User requested: "Make sure the user cannot pick “close” earlier than “open”"
-                                                        // We can filter options or just rely on user. Let's filter options in render if we want to be fancy,
-                                                        // or just trust the user for now to keep it simple, as requested "either by validation or by constraining".
-                                                        // Let's constrain.
-                                                        updateDay(day, { closeTime: e.target.value });
+                                                        // Validation: ensure close is after open
+                                                        const open = data.openTime || defaultOpenTime;
+                                                        if (e.target.value > open) {
+                                                            updateDay(day, { closeTime: e.target.value });
+                                                        }
                                                     }}
                                                     className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none cursor-pointer"
                                                 >
                                                     {TIME_OPTIONS.map(t => {
-                                                        // Optional: disable times before open time
+                                                        // Disable times before open time
                                                         const open = data.openTime || defaultOpenTime;
+                                                        // Simple string comparison works for "HH:MM" format
                                                         if (t <= open) return null;
                                                         return <option key={t} value={t}>{t}</option>
                                                     })}

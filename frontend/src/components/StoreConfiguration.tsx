@@ -181,6 +181,10 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
                         + Add employee
                     </button>
                 </div>
+
+                <p className="mt-4 text-xs text-slate-400 italic">
+                    Mondays always require at least one Manager / Deputy / Supervisor on shift.
+                </p>
             </div>
 
             {/* Staffing Rules */}
