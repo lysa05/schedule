@@ -18,9 +18,11 @@ const MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ];
 
-const TIME_OPTIONS = Array.from({ length: 25 }, (_, i) => {
-    const h = 8 + Math.floor(i / 2);
-    const m = i % 2 === 0 ? "00" : "30";
+// Generate time options from 08:00 to 23:00 in 30 min increments
+const TIME_OPTIONS = Array.from({ length: 31 }, (_, i) => {
+    const totalMinutes = 8 * 60 + i * 30; // Start at 8:00
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60 === 0 ? "00" : "30";
     return `${h.toString().padStart(2, '0')}:${m}`;
 });
 
@@ -66,7 +68,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
         switch (type) {
             case 'busy': return 'bg-amber-100 border-amber-300 text-amber-800';
             case 'holiday_closed': return 'bg-red-100 border-red-300 text-red-800';
-            case 'holiday_open': return 'bg-green-100 border-green-300 text-green-800';
+            case 'holiday_open': return 'bg-purple-100 border-purple-300 text-purple-800';
             case 'holiday_short': return 'bg-blue-100 border-blue-300 text-blue-800';
             default: return 'bg-white border-slate-200 text-slate-700 hover:border-blue-300';
         }
@@ -76,7 +78,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
         switch (type) {
             case 'busy': return 'BUSY';
             case 'holiday_closed': return 'CLOSED';
-            case 'holiday_open': return 'OPEN';
+            case 'holiday_open': return 'HOLIDAY';
             case 'holiday_short': return 'SHORT';
             default: return 'NORMAL';
         }
@@ -92,44 +94,48 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                     </button>
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     {/* Month Selector */}
-                    <div className="flex items-center gap-4 bg-slate-50 rounded-lg p-1">
-                        <button
-                            onClick={() => setMonth(month === 1 ? 12 : month - 1)}
-                            className="p-2 hover:bg-white rounded-md text-slate-500 hover:text-slate-900 transition-colors shadow-sm"
+                    <div className="relative">
+                        <select
+                            value={month}
+                            onChange={(e) => setMonth(parseInt(e.target.value))}
+                            className="appearance-none bg-slate-50 border border-slate-200 text-slate-900 text-lg font-semibold rounded-lg py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
                         >
-                            ◀
-                        </button>
-                        <span className="font-semibold text-slate-900 w-24 text-center select-none">
-                            {MONTHS[month - 1]}
-                        </span>
-                        <button
-                            onClick={() => setMonth(month === 12 ? 1 : month + 1)}
-                            className="p-2 hover:bg-white rounded-md text-slate-500 hover:text-slate-900 transition-colors shadow-sm"
-                        >
-                            ▶
-                        </button>
+                            {MONTHS.map((m, i) => (
+                                <option key={i} value={i + 1}>{m}</option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
                     </div>
 
                     {/* Store Hours */}
-                    <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                        <span>Store hours:</span>
-                        <select
-                            value={defaultOpenTime}
-                            onChange={(e) => setDefaultOpenTime(e.target.value)}
-                            className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none focus:border-blue-500"
-                        >
-                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <span>–</span>
-                        <select
-                            value={defaultCloseTime}
-                            onChange={(e) => setDefaultCloseTime(e.target.value)}
-                            className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none focus:border-blue-500"
-                        >
-                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                            <span className="font-medium">Store hours:</span>
+                            <select
+                                value={defaultOpenTime}
+                                onChange={(e) => setDefaultOpenTime(e.target.value)}
+                                className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none focus:border-blue-500 cursor-pointer"
+                            >
+                                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <span>–</span>
+                            <select
+                                value={defaultCloseTime}
+                                onChange={(e) => setDefaultCloseTime(e.target.value)}
+                                className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none focus:border-blue-500 cursor-pointer"
+                            >
+                                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        <p className="text-[10px] text-slate-400">
+                            These hours define when shifts can be scheduled.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -144,15 +150,27 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                             <button
                                 onClick={() => setOpenPopover(isOpen ? null : day)}
                                 className={`
-                  w-full aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 transition-all
+                  w-full aspect-square rounded-lg border flex flex-col items-center justify-center gap-0.5 transition-all p-1
                   ${getDayColor(data.type)}
                   ${isOpen ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}
                 `}
                             >
-                                <span className="font-semibold text-lg">{day}</span>
-                                <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">
+                                <span className="font-semibold text-lg leading-none">{day}</span>
+                                <span className="text-[9px] uppercase font-bold tracking-wider opacity-80 leading-tight">
                                     {getDayLabel(data.type)}
                                 </span>
+                                {data.type === 'holiday_short' && (
+                                    <div className="flex flex-col items-center mt-1">
+                                        <span className="text-[9px] font-medium leading-tight opacity-90">
+                                            {data.openTime || defaultOpenTime}–{data.closeTime || defaultCloseTime}
+                                        </span>
+                                        {data.staffOverride && (
+                                            <span className="text-[9px] font-medium leading-tight opacity-75">
+                                                {data.staffOverride} staff
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                             </button>
 
                             {isOpen && (
@@ -164,6 +182,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                         {[
                                             { id: 'normal', label: 'Normal day', color: 'text-slate-700 hover:bg-slate-50' },
                                             { id: 'busy', label: 'Busy day', color: 'text-amber-700 hover:bg-amber-50' },
+                                            { id: 'holiday_open', label: 'Public holiday (store open)', color: 'text-purple-700 hover:bg-purple-50' },
                                             { id: 'holiday_closed', label: 'Store closed', color: 'text-red-700 hover:bg-red-50' },
                                             { id: 'holiday_short', label: 'Short opening hours', color: 'text-blue-700 hover:bg-blue-50' },
                                         ].map(opt => (
@@ -184,7 +203,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                                 <select
                                                     value={data.openTime || defaultOpenTime}
                                                     onChange={(e) => updateDay(day, { openTime: e.target.value })}
-                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none"
+                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none cursor-pointer"
                                                 >
                                                     {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                                                 </select>
@@ -193,10 +212,23 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                                 <span className="text-slate-600">Close at</span>
                                                 <select
                                                     value={data.closeTime || defaultCloseTime}
-                                                    onChange={(e) => updateDay(day, { closeTime: e.target.value })}
-                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none"
+                                                    onChange={(e) => {
+                                                        // Simple validation: ensure close is after open? 
+                                                        // For now just let user pick, backend/logic handles it or user self-corrects.
+                                                        // User requested: "Make sure the user cannot pick “close” earlier than “open”"
+                                                        // We can filter options or just rely on user. Let's filter options in render if we want to be fancy,
+                                                        // or just trust the user for now to keep it simple, as requested "either by validation or by constraining".
+                                                        // Let's constrain.
+                                                        updateDay(day, { closeTime: e.target.value });
+                                                    }}
+                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-900 outline-none cursor-pointer"
                                                 >
-                                                    {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    {TIME_OPTIONS.map(t => {
+                                                        // Optional: disable times before open time
+                                                        const open = data.openTime || defaultOpenTime;
+                                                        if (t <= open) return null;
+                                                        return <option key={t} value={t}>{t}</option>
+                                                    })}
                                                 </select>
                                             </div>
                                             <div className="flex items-center justify-between text-xs">

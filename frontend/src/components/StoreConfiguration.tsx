@@ -21,7 +21,7 @@ const ROLES: { value: Role; label: string }[] = [
     { value: "assistant", label: "Assistant" },
 ];
 
-const CONTRACTS = [1.0, 0.75, 0.5, 0.25];
+const CONTRACTS = [1.0, 0.9, 0.75, 0.5];
 
 export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
     fulltimeHours, setFulltimeHours,
@@ -64,7 +64,7 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-base font-semibold text-slate-900 mb-4">Step 3 – Store settings & employees</h2>
+            <h2 className="text-base font-semibold text-slate-900 mb-4">Step 2 – Store settings & employees</h2>
 
             {/* Store Settings */}
             <div className="mb-6">
@@ -109,22 +109,36 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
                                         />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <select
-                                            value={emp.role}
-                                            onChange={(e) => updateEmployee(emp.id, { role: e.target.value as Role })}
-                                            className="w-full bg-transparent outline-none py-1"
-                                        >
-                                            {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                                        </select>
+                                        <div className="relative w-full">
+                                            <select
+                                                value={emp.role}
+                                                onChange={(e) => updateEmployee(emp.id, { role: e.target.value as Role })}
+                                                className="w-full bg-transparent outline-none py-1 pr-4 appearance-none cursor-pointer"
+                                            >
+                                                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-slate-400">
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="px-3 py-2">
-                                        <select
-                                            value={emp.contractFte}
-                                            onChange={(e) => updateEmployee(emp.id, { contractFte: parseFloat(e.target.value) })}
-                                            className="w-full bg-transparent outline-none py-1"
-                                        >
-                                            {CONTRACTS.map(c => <option key={c} value={c}>{c.toFixed(2)}</option>)}
-                                        </select>
+                                        <div className="relative w-full">
+                                            <select
+                                                value={emp.contractFte}
+                                                onChange={(e) => updateEmployee(emp.id, { contractFte: parseFloat(e.target.value) })}
+                                                className="w-full bg-transparent outline-none py-1 pr-4 appearance-none cursor-pointer"
+                                            >
+                                                {CONTRACTS.map(c => <option key={c} value={c}>{c.toFixed(2)}</option>)}
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-slate-400">
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="px-3 py-2 text-slate-500 font-mono">
                                         {Math.round(fulltimeHours * emp.contractFte)}
@@ -146,8 +160,11 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
                                         <button
                                             onClick={() => removeEmployee(emp.id)}
                                             className="text-slate-400 hover:text-red-500 transition-colors"
+                                            aria-label="Remove employee"
                                         >
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
                                         </button>
                                     </td>
                                 </tr>
