@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { EmployeeInput, Role, ContractType } from '../types';
+import type { EmployeeInput, Role } from '../types';
 import { AvailabilityModal } from './AvailabilityModal';
 
 interface StoreConfigurationProps {
@@ -7,19 +7,26 @@ interface StoreConfigurationProps {
     setFulltimeHours: (h: number) => void;
     employees: EmployeeInput[];
     setEmployees: (emps: EmployeeInput[]) => void;
-    requireManagerMondays: boolean;
-    setRequireManagerMondays: (v: boolean) => void;
+    config: { autoStaffing: boolean; busyWeekends: boolean };
+    setConfig: (c: { autoStaffing: boolean; busyWeekends: boolean }) => void;
     month: number;
     year: number;
 }
 
-const ROLES: Role[] = ["manager", "deputy", "supervisor", "assistant"];
-const CONTRACTS: ContractType[] = ["fulltime", "0.75", "0.5", "student", "custom"];
+const ROLES: { value: Role; label: string }[] = [
+    { value: "manager", label: "Manager" },
+    { value: "deputy", label: "Deputy" },
+    { value: "supervisor", label: "Supervisor" },
+    { value: "visual_merchandiser", label: "Visual Merchandiser" },
+    { value: "assistant", label: "Assistant" },
+];
+
+const CONTRACTS = [1.0, 0.75, 0.5, 0.25];
 
 export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
     fulltimeHours, setFulltimeHours,
     employees, setEmployees,
-    requireManagerMondays, setRequireManagerMondays,
+    config, setConfig,
     month, year
 }) => {
     const [editingAvailability, setEditingAvailability] = useState<string | null>(null);
@@ -29,8 +36,7 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
             id: crypto.randomUUID(),
             name: "",
             role: "assistant",
-            contract: "fulltime",
-            targetHours: fulltimeHours,
+            contractFte: 1.0,
             unavailableDays: [],
             vacationDays: []
         };
@@ -44,19 +50,7 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
     const updateEmployee = (id: string, updates: Partial<EmployeeInput>) => {
         setEmployees(employees.map(e => {
             if (e.id !== id) return e;
-
-            const updated = { ...e, ...updates };
-
-            // Auto-calc target hours if contract changes
-            if (updates.contract && updates.contract !== 'custom') {
-                let factor = 1.0;
-                if (updates.contract === '0.75') factor = 0.75;
-                if (updates.contract === '0.5') factor = 0.5;
-                if (updates.contract === 'student') factor = 0.3; // Assumption
-                updated.targetHours = Math.round(fulltimeHours * factor);
-            }
-
-            return updated;
+            return { ...e, ...updates };
         }));
     };
 
@@ -70,118 +64,148 @@ export const StoreConfiguration: React.FC<StoreConfigurationProps> = ({
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Step 3 – Store settings for this month</h2>
+            <h2 className="text-base font-semibold text-slate-900 mb-4">Step 3 – Store settings & employees</h2>
 
             {/* Store Settings */}
-            <div className="mb-8 max-w-xs">
+            <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full-time monthly hours</label>
-                <input
-                    type="number"
-                    value={fulltimeHours}
-                    onChange={(e) => setFulltimeHours(parseFloat(e.target.value) || 0)}
-                    placeholder="e.g. 184"
-                    className="w-full rounded-lg border-slate-300 border px-3 py-2 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-                <p className="text-xs text-slate-500 mt-1">Enter the standard monthly hours for a full-time contract for this month.</p>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="number"
+                        value={fulltimeHours}
+                        onChange={(e) => setFulltimeHours(parseFloat(e.target.value) || 0)}
+                        placeholder="184"
+                        className="w-32 rounded-lg border-slate-300 border px-3 py-2 text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    <span className="text-xs text-slate-500">Enter the standard monthly hours for a 1.0 FTE contract for this month.</span>
+                </div>
             </div>
 
             {/* Employees Table */}
-            <h3 className="text-md font-semibold text-slate-900 mb-3">Employees</h3>
-            <div className="overflow-x-auto mb-4">
-                <table className="w-full text-sm text-left min-w-[800px]">
-                    <thead className="bg-slate-50 text-slate-500 font-medium">
-                        <tr>
-                            <th className="px-3 py-2 rounded-tl-lg">Name</th>
-                            <th className="px-3 py-2">Role</th>
-                            <th className="px-3 py-2">Contract</th>
-                            <th className="px-3 py-2 w-24">Target (h)</th>
-                            <th className="px-3 py-2 text-center">Availability</th>
-                            <th className="px-3 py-2 rounded-tr-lg w-10"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {employees.map(emp => (
-                            <tr key={emp.id} className="hover:bg-slate-50">
-                                <td className="px-3 py-2">
-                                    <input
-                                        type="text"
-                                        value={emp.name}
-                                        onChange={(e) => updateEmployee(emp.id, { name: e.target.value })}
-                                        placeholder="Name"
-                                        className="w-full bg-transparent border-b border-transparent focus:border-blue-500 outline-none py-1"
-                                    />
-                                </td>
-                                <td className="px-3 py-2">
-                                    <select
-                                        value={emp.role}
-                                        onChange={(e) => updateEmployee(emp.id, { role: e.target.value as Role })}
-                                        className="w-full bg-transparent outline-none py-1"
-                                    >
-                                        {ROLES.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-                                    </select>
-                                </td>
-                                <td className="px-3 py-2">
-                                    <select
-                                        value={emp.contract}
-                                        onChange={(e) => updateEmployee(emp.id, { contract: e.target.value as ContractType })}
-                                        className="w-full bg-transparent outline-none py-1"
-                                    >
-                                        {CONTRACTS.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                </td>
-                                <td className="px-3 py-2">
-                                    <input
-                                        type="number"
-                                        value={emp.targetHours}
-                                        onChange={(e) => updateEmployee(emp.id, { targetHours: parseFloat(e.target.value) || 0 })}
-                                        className="w-full bg-transparent border-b border-transparent focus:border-blue-500 outline-none py-1"
-                                    />
-                                </td>
-                                <td className="px-3 py-2 text-center">
-                                    <button
-                                        onClick={() => setEditingAvailability(emp.id)}
-                                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                                    >
-                                        Edit availability
-                                        {(emp.unavailableDays.length > 0 || emp.vacationDays.length > 0) && (
-                                            <span className="ml-1 bg-blue-100 text-blue-700 px-1.5 rounded-full">
-                                                {emp.unavailableDays.length + emp.vacationDays.length}
-                                            </span>
-                                        )}
-                                    </button>
-                                </td>
-                                <td className="px-3 py-2 text-center">
-                                    <button
-                                        onClick={() => removeEmployee(emp.id)}
-                                        className="text-slate-400 hover:text-red-500 transition-colors"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
-                                </td>
+            <div className="mb-6">
+                <h3 className="text-sm font-semibold text-slate-900 mb-2">Employees</h3>
+                <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-sm text-left min-w-[700px]">
+                        <thead className="bg-slate-50 text-slate-500 font-medium">
+                            <tr>
+                                <th className="px-3 py-2 border-b border-slate-200">Name</th>
+                                <th className="px-3 py-2 border-b border-slate-200">Role</th>
+                                <th className="px-3 py-2 border-b border-slate-200">FTE</th>
+                                <th className="px-3 py-2 border-b border-slate-200 w-20">Target</th>
+                                <th className="px-3 py-2 border-b border-slate-200 text-center">Availability</th>
+                                <th className="px-3 py-2 border-b border-slate-200 w-10"></th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {employees.map(emp => (
+                                <tr key={emp.id} className="hover:bg-slate-50">
+                                    <td className="px-3 py-2">
+                                        <input
+                                            type="text"
+                                            value={emp.name}
+                                            onChange={(e) => updateEmployee(emp.id, { name: e.target.value })}
+                                            placeholder="Name"
+                                            className="w-full bg-transparent focus:border-blue-500 outline-none py-1 border-b border-transparent"
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <select
+                                            value={emp.role}
+                                            onChange={(e) => updateEmployee(emp.id, { role: e.target.value as Role })}
+                                            className="w-full bg-transparent outline-none py-1"
+                                        >
+                                            {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                        </select>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <select
+                                            value={emp.contractFte}
+                                            onChange={(e) => updateEmployee(emp.id, { contractFte: parseFloat(e.target.value) })}
+                                            className="w-full bg-transparent outline-none py-1"
+                                        >
+                                            {CONTRACTS.map(c => <option key={c} value={c}>{c.toFixed(2)}</option>)}
+                                        </select>
+                                    </td>
+                                    <td className="px-3 py-2 text-slate-500 font-mono">
+                                        {Math.round(fulltimeHours * emp.contractFte)}
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                        <button
+                                            onClick={() => setEditingAvailability(emp.id)}
+                                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                        >
+                                            Edit
+                                            {(emp.unavailableDays.length > 0 || emp.vacationDays.length > 0) && (
+                                                <span className="ml-1 bg-blue-100 text-blue-700 px-1.5 rounded-full">
+                                                    {emp.unavailableDays.length + emp.vacationDays.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </td>
+                                    <td className="px-3 py-2 text-center">
+                                        <button
+                                            onClick={() => removeEmployee(emp.id)}
+                                            className="text-slate-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="flex justify-between items-start">
+                    <button
+                        onClick={addEmployee}
+                        className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                        + Add employee
+                    </button>
+
+                    <p className="text-xs text-slate-400 italic max-w-xs text-right">
+                        Mondays always require at least one Manager / Deputy / Supervisor on shift.
+                    </p>
+                </div>
             </div>
 
-            <div className="flex justify-between items-center">
-                <button
-                    onClick={addEmployee}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-                    Add employee
-                </button>
+            {/* Staffing Rules */}
+            <div className="border-t border-slate-100 pt-4">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Staffing rules</h3>
+                <div className="flex flex-col gap-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                        <div className="relative inline-flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={config.autoStaffing}
+                                onChange={(e) => setConfig({ ...config, autoStaffing: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                        <div>
+                            <span className="text-sm font-medium text-slate-700">Use automatic staffing rules</span>
+                            <p className="text-xs text-slate-500">Use built-in rules for balancing opens, middles and closes.</p>
+                        </div>
+                    </label>
 
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={requireManagerMondays}
-                        onChange={(e) => setRequireManagerMondays(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-slate-700">On every Monday there must be at least one manager (Store / Deputy / Supervisor) on shift.</span>
-                </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                        <div className="relative inline-flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={config.busyWeekends}
+                                onChange={(e) => setConfig({ ...config, busyWeekends: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                        <div>
+                            <span className="text-sm font-medium text-slate-700">Treat weekends as busier days</span>
+                            <p className="text-xs text-slate-500">If enabled, Saturdays and Sundays will be treated as busy days.</p>
+                        </div>
+                    </label>
+                </div>
             </div>
 
             {editingEmployee && (

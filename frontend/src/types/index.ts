@@ -40,23 +40,21 @@ export interface SolveResponse {
     understaffed: UnderstaffedDay[];
 }
 
-export type DayType = "normal" | "holiday_open" | "holiday_closed";
+export type DayType = "normal" | "busy" | "holiday_closed" | "holiday_open" | "holiday_short";
 
 export interface SpecialDayInput {
     day: number;
     type: DayType;
-    busy: boolean;
 }
 
-export type Role = "manager" | "deputy" | "supervisor" | "assistant";
+export type Role = "manager" | "deputy" | "supervisor" | "visual_merchandiser" | "assistant";
 export type ContractType = "fulltime" | "0.75" | "0.5" | "student" | "custom";
 
 export interface EmployeeInput {
     id: string;
     name: string;
     role: Role;
-    contract: ContractType;
-    targetHours: number;
+    contractFte: number; // 1.0, 0.75, 0.5, 0.25
     unavailableDays: number[];
     vacationDays: number[];
 }
@@ -67,7 +65,10 @@ export interface SolveRequest {
     fulltimeHours: number;
     employees: EmployeeInput[];
     specialDays: SpecialDayInput[];
-    requireManagerMondays: boolean;
+    config: {
+        autoStaffing: boolean;
+        busyWeekends: boolean;
+    };
 }
 
 export type SpecialDayType = 'holiday' | 'busy' | null;

@@ -16,17 +16,19 @@ app.add_middleware(
 
 class SpecialDayInput(BaseModel):
     day: int
-    type: str  # "normal", "holiday_open", "holiday_closed"
-    busy: bool
+    type: str  # "normal", "busy", "holiday_closed", "holiday_open", "holiday_short"
 
 class EmployeeInput(BaseModel):
     id: str
     name: str
     role: str
-    contract: str
-    targetHours: float
+    contractFte: float
     unavailableDays: List[int]
     vacationDays: List[int]
+
+class ConfigInput(BaseModel):
+    autoStaffing: bool
+    busyWeekends: bool
 
 class SolveRequest(BaseModel):
     month: int
@@ -34,7 +36,7 @@ class SolveRequest(BaseModel):
     fulltimeHours: float
     employees: List[EmployeeInput]
     specialDays: List[SpecialDayInput]
-    requireManagerMondays: bool
+    config: ConfigInput
 
 def transform_request(req: SolveRequest) -> Dict[str, Any]:
     # Convert new frontend payload to old backend dict structure
@@ -42,21 +44,14 @@ def transform_request(req: SolveRequest) -> Dict[str, Any]:
     # 1. Employees
     employees = []
     for e in req.employees:
-        # Map contract string to float
-        contract_map = {
-            "fulltime": 1.0,
-            "0.75": 0.75,
-            "0.5": 0.5,
-            "student": 0.3, # Approx
-            "custom": 1.0 # Fallback, relies on targetHours
-        }
-        ctype = contract_map.get(e.contract, 1.0)
+        # Calculate target hours from FTE
+        target_hours = req.fulltimeHours * e.contractFte
         
         employees.append({
             "name": e.name,
             "role": e.role,
-            "contract_type": ctype,
-            "hours_fund": e.targetHours,
+            "contract_type": e.contractFte,
+            "hours_fund": target_hours,
             "unavailable_days": e.unavailableDays,
             "vacation_days": e.vacationDays
         })
@@ -74,26 +69,25 @@ def transform_request(req: SolveRequest) -> Dict[str, Any]:
             closed_holidays.append(sd.day)
         elif sd.type == "holiday_open":
             open_holidays.append(sd.day)
-            # Maybe set special hours? Defaulting to standard special day logic if needed
-            # For now, just marking it as open holiday might be enough if scheduler logic uses it
-            # Scheduler logic uses 'special_days' dict for close times.
-            # If user didn't specify time, maybe we assume standard holiday hours (e.g. close 17:00)?
-            # Or just treat as normal day but with holiday pay?
-            # Let's assume holiday_open means standard holiday hours.
-            special_days[day_str] = {"close": "17:00", "staff": 3} # Default assumption
-            
-        if sd.busy and sd.type != "holiday_closed":
+            # Standard holiday hours assumption
+            special_days[day_str] = {"close": "17:00", "staff": 3}
+        elif sd.type == "holiday_short":
+            open_holidays.append(sd.day) # Treat as open holiday but with specific short hours
+            special_days[day_str] = {"close": "16:00", "staff": 2} # Shorter than open
+        elif sd.type == "busy":
             heavy_days[day_str] = {"extra_staff": 2}
 
     # 3. Config
-    config = {
-        "auto_staffing": True,
-        "busy_weekends": True,
+    # Map frontend config to backend config
+    backend_config = {
+        "auto_staffing": req.config.autoStaffing,
+        "busy_weekends": req.config.busyWeekends,
         "min_openers": 1,
         "min_closers": 1,
         "open_ratio": 0.4,
         "close_ratio": 0.4,
-        "manager_roles": ["manager", "deputy", "supervisor"] if req.requireManagerMondays else []
+        # Always enforce manager on Mondays
+        "manager_roles": ["manager", "deputy", "supervisor"]
     }
     
     # 4. Weights (Defaults)
@@ -114,7 +108,7 @@ def transform_request(req: SolveRequest) -> Dict[str, Any]:
         "special_days": special_days,
         "closed_holidays": closed_holidays,
         "open_holidays": open_holidays,
-        "config": config,
+        "config": backend_config,
         "weights": weights
     }
 

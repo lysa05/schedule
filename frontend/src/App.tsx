@@ -12,18 +12,22 @@ const API_URL = "https://scheduler-api-wsfi.onrender.com/solve";
 const App: React.FC = () => {
   // State
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year] = useState(new Date().getFullYear());
 
   const [specialDays, setSpecialDays] = useState<SpecialDayInput[]>([]);
 
   const [fulltimeHours, setFulltimeHours] = useState(184);
   const [employees, setEmployees] = useState<EmployeeInput[]>([
-    { id: '1', name: 'Kuba', role: 'manager', contract: 'fulltime', targetHours: 184, unavailableDays: [], vacationDays: [] },
-    { id: '2', name: 'Andrii', role: 'deputy', contract: 'fulltime', targetHours: 184, unavailableDays: [], vacationDays: [] },
-    { id: '3', name: 'Almaz', role: 'supervisor', contract: 'fulltime', targetHours: 184, unavailableDays: [], vacationDays: [] },
-    { id: '4', name: 'Misa', role: 'assistant', contract: '0.5', targetHours: 92, unavailableDays: [], vacationDays: [] },
+    { id: '1', name: 'Kuba', role: 'manager', contractFte: 1.0, unavailableDays: [], vacationDays: [] },
+    { id: '2', name: 'Andrii', role: 'deputy', contractFte: 1.0, unavailableDays: [], vacationDays: [] },
+    { id: '3', name: 'Almaz', role: 'supervisor', contractFte: 1.0, unavailableDays: [], vacationDays: [] },
+    { id: '4', name: 'Misa', role: 'assistant', contractFte: 0.5, unavailableDays: [], vacationDays: [] },
   ]);
-  const [requireManagerMondays, setRequireManagerMondays] = useState(true);
+
+  const [config, setConfig] = useState({
+    autoStaffing: true,
+    busyWeekends: true
+  });
 
   const [results, setResults] = useState<SolveResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +45,7 @@ const App: React.FC = () => {
         fulltimeHours,
         employees,
         specialDays,
-        requireManagerMondays
+        config
       };
 
       const response = await fetch(API_URL, {
@@ -68,50 +72,47 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-900">Shift Scheduler</h1>
-          <p className="mt-2 text-slate-600">Generate fair and balanced shift plans for your store.</p>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Shift Scheduler</h1>
         </div>
 
         {/* Steps */}
-        <div className="space-y-6">
-          <PeriodSelector
-            month={month}
-            year={year}
-            onChange={(m, y) => { setMonth(m); setYear(y); }}
-          />
+        <PeriodSelector
+          month={month}
+          year={year}
+          onChange={setMonth}
+        />
 
-          <SpecialDaysCalendar
-            month={month}
-            year={year}
-            specialDays={specialDays}
-            onChange={setSpecialDays}
-          />
+        <SpecialDaysCalendar
+          month={month}
+          year={year}
+          specialDays={specialDays}
+          onChange={setSpecialDays}
+        />
 
-          <StoreConfiguration
-            fulltimeHours={fulltimeHours}
-            setFulltimeHours={setFulltimeHours}
-            employees={employees}
-            setEmployees={setEmployees}
-            requireManagerMondays={requireManagerMondays}
-            setRequireManagerMondays={setRequireManagerMondays}
-            month={month}
-            year={year}
-          />
+        <StoreConfiguration
+          fulltimeHours={fulltimeHours}
+          setFulltimeHours={setFulltimeHours}
+          employees={employees}
+          setEmployees={setEmployees}
+          config={config}
+          setConfig={setConfig}
+          month={month}
+          year={year}
+        />
 
-          <GenerateSection
-            onGenerate={handleGenerate}
-            loading={loading}
-            error={error}
-          />
-        </div>
+        <GenerateSection
+          onGenerate={handleGenerate}
+          loading={loading}
+          error={error}
+        />
 
         {/* Results */}
         {results && (
-          <div className="animate-fade-in">
+          <div className="animate-fade-in pt-4">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Results</h2>
             <ResultsView results={results} month={month} year={year} />
           </div>
