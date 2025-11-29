@@ -5,12 +5,22 @@ interface ResultsViewProps {
     results: SolveResponse;
     month: number;
     year: number;
+    onUpdateResults: (newResults: SolveResponse) => void;
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year }) => {
+// Time options for editing (06:00 - 23:00)
+const TIME_OPTIONS = Array.from({ length: 35 }, (_, i) => {
+    const totalMinutes = 6 * 60 + i * 30;
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60 === 0 ? "00" : "30";
+    return `${h.toString().padStart(2, '0')}:${m}`;
+});
+
+export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year, onUpdateResults }) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'by_day' | 'by_employee'>('summary');
+    const [editingShift, setEditingShift] = useState<{ day: number, empName: string, shift: ScheduleShift | null } | null>(null);
 
     const numDays = new Date(year, month, 0).getDate();
     const days = Array.from({ length: numDays }, (_, i) => i + 1);
@@ -28,8 +38,97 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year }
         return null;
     };
 
+    const handleEditClick = (day: number, empName: string, shift: ScheduleShift | null) => {
+        setEditingShift({ day, empName, shift });
+    };
+
+    const handleSaveShift = (start: string, end: string) => {
+        if (!editingShift) return;
+
+        const { day, empName } = editingShift;
+        const dayStr = day.toString();
+
+        // Calculate duration
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        const duration = (eh + em / 60) - (sh + sm / 60);
+
+        const newShift: ScheduleShift = {
+            start,
+            end,
+            duration,
+            type: 'MANUAL' // Mark as manual
+        };
+
+        // Deep copy results to mutate
+        const newResults = JSON.parse(JSON.stringify(results));
+
+        if (!newResults.schedule[dayStr]) {
+            newResults.schedule[dayStr] = {};
+        }
+        newResults.schedule[dayStr][empName] = newShift;
+
+        // Recalculate stats
+        recalculateStats(newResults);
+
+        onUpdateResults(newResults);
+        setEditingShift(null);
+    };
+
+    const handleClearShift = () => {
+        if (!editingShift) return;
+        const { day, empName } = editingShift;
+        const dayStr = day.toString();
+
+        const newResults = JSON.parse(JSON.stringify(results));
+        if (newResults.schedule[dayStr] && newResults.schedule[dayStr][empName]) {
+            delete newResults.schedule[dayStr][empName];
+        }
+
+        recalculateStats(newResults);
+        onUpdateResults(newResults);
+        setEditingShift(null);
+    };
+
+    const recalculateStats = (res: SolveResponse) => {
+        // Re-compute employee stats based on current schedule
+        res.employees.forEach(emp => {
+            let worked = 0;
+            let opens = 0;
+            let closes = 0;
+            let middle = 0;
+
+            Object.values(res.schedule).forEach(dayShifts => {
+                const shift = dayShifts[emp.name];
+                if (shift) {
+                    worked += shift.duration;
+                    // Simple inference for stats if type is MANUAL, otherwise use existing type
+                    if (shift.type === 'OPEN' || shift.type === 'FIXED') opens++; // Assuming FIXED counts as open/close pair usually, but simplified here
+                    else if (shift.type === 'CLOSE') closes++;
+                    else if (shift.type === 'FLEX') middle++;
+                    else if (shift.type === 'MANUAL') {
+                        // Try to guess? Or just ignore for counts?
+                        // Let's guess based on time
+                        const startH = parseInt(shift.start.split(':')[0]);
+                        const endH = parseInt(shift.end.split(':')[0]);
+                        if (startH <= 9) opens++;
+                        else if (endH >= 20) closes++;
+                        else middle++;
+                    }
+                }
+            });
+
+            emp.worked = worked;
+            emp.total = worked + emp.paid_off;
+            emp.diff = emp.total - emp.target;
+            emp.opens = opens;
+            emp.closes = closes;
+            emp.middle = middle;
+        });
+    };
+
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
             {/* Tabs */}
             <div className="flex border-b border-slate-200">
                 <button
@@ -57,16 +156,23 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year }
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                                <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">Status</h4>
-                                <p className="text-lg font-bold text-slate-900">{results.status}</p>
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">Solver Status</h4>
+                                <p className="text-lg font-bold text-slate-900">{results.solver_status || results.status}</p>
+                                {results.solve_time_seconds !== undefined && (
+                                    <p className="text-xs text-slate-500 mt-1">Time: {results.solve_time_seconds.toFixed(2)}s</p>
+                                )}
                             </div>
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                                 <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">Period</h4>
                                 <p className="text-lg font-bold text-slate-900">{month}/{year}</p>
                             </div>
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                                <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">Employees</h4>
-                                <p className="text-lg font-bold text-slate-900">{results.employees.length}</p>
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase mb-1">Balance</h4>
+                                <p className="text-lg font-bold text-slate-900">
+                                    {/* Avg absolute diff */}
+                                    {(results.employees.reduce((acc, e) => acc + Math.abs(e.diff), 0) / results.employees.length).toFixed(1)}h
+                                </p>
+                                <p className="text-xs text-slate-400 mt-1">Avg. deviation</p>
                             </div>
                         </div>
 
@@ -118,7 +224,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year }
                 )}
 
                 {activeTab === 'by_day' && (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto pb-20"> {/* Padding for popover space */}
                         <table className="w-full text-sm text-left border-collapse">
                             <thead>
                                 <tr>
@@ -139,18 +245,23 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year }
                                             {results.employees.map((emp, i) => {
                                                 const shift = getShiftForEmployee(day, emp.name);
                                                 return (
-                                                    <td key={i} className="p-2 border-r border-slate-50 last:border-0">
+                                                    <td
+                                                        key={i}
+                                                        className="p-2 border-r border-slate-50 last:border-0 cursor-pointer hover:bg-slate-100 transition-colors"
+                                                        onClick={() => handleEditClick(day, emp.name, shift)}
+                                                    >
                                                         {shift ? (
-                                                            <div className={`text-xs p-1 rounded ${shift.type === 'OPEN' ? 'bg-blue-100 text-blue-800' :
-                                                                    shift.type === 'CLOSE' ? 'bg-indigo-100 text-indigo-800' :
-                                                                        shift.type === 'FLEX' ? 'bg-purple-100 text-purple-800' :
-                                                                            'bg-slate-100 text-slate-800'
+                                                            <div className={`text-xs p-1 rounded border ${shift.type === 'OPEN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                                                shift.type === 'CLOSE' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                                                    shift.type === 'FLEX' ? 'bg-teal-100 text-teal-800 border-teal-200' :
+                                                                        shift.type === 'MANUAL' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                                                            'bg-slate-100 text-slate-800 border-slate-200'
                                                                 }`}>
                                                                 <div className="font-semibold">{shift.start} - {shift.end}</div>
                                                                 <div className="text-[10px] opacity-75">{shift.type}</div>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-slate-300 text-xs">-</span>
+                                                            <span className="text-slate-300 text-xs block text-center">-</span>
                                                         )}
                                                     </td>
                                                 );
@@ -199,6 +310,62 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year }
                     </div>
                 )}
             </div>
+
+            {/* Edit Shift Modal/Popover */}
+            {editingShift && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                            Edit Shift: {editingShift.empName} (Day {editingShift.day})
+                        </h3>
+
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            handleSaveShift(formData.get('start') as string, formData.get('end') as string);
+                        }}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Start Time</label>
+                                    <select name="start" defaultValue={editingShift.shift?.start || "08:30"} className="w-full border border-slate-300 rounded-lg p-2">
+                                        {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">End Time</label>
+                                    <select name="end" defaultValue={editingShift.shift?.end || "17:00"} className="w-full border border-slate-300 rounded-lg p-2">
+                                        {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={handleClearShift}
+                                    className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium text-sm"
+                                >
+                                    Clear Shift
+                                </button>
+                                <div className="flex-1"></div>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingShift(null)}
+                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium text-sm"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

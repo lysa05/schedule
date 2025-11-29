@@ -34,6 +34,9 @@ export interface UnderstaffedDay {
 
 export interface SolveResponse {
     status: string;
+    solver_status?: string;
+    solve_time_seconds?: number;
+    best_bound?: number;
     objective_value: number;
     schedule: ScheduleOutput;
     employees: EmployeeStat[];

@@ -33,6 +33,27 @@ class ConfigInput(BaseModel):
     autoStaffing: bool
     busyWeekends: bool
 
+class ScheduleShift(BaseModel):
+    employee_id: str
+    start_time: str
+    end_time: str
+    role: str
+
+class EmployeeStat(BaseModel):
+    id: str
+    name: str
+    role: str
+    total_hours: float
+    shifts_worked: int
+    open_shifts: int
+    close_shifts: int
+
+class UnderstaffedDay(BaseModel):
+    day: int
+    required_staff: int
+    actual_staff: int
+    missing_staff: int
+
 class SolveRequest(BaseModel):
     month: int
     year: int
@@ -42,6 +63,16 @@ class SolveRequest(BaseModel):
     employees: List[EmployeeInput]
     specialDays: List[SpecialDayInput]
     config: ConfigInput
+
+class SolveResponse(BaseModel):
+    status: str
+    solver_status: Optional[str] = None
+    solve_time_seconds: Optional[float] = None
+    best_bound: Optional[float] = None
+    objective_value: float
+    schedule: Dict[str, Dict[str, ScheduleShift]]
+    employees: List[EmployeeStat]
+    understaffed: List[UnderstaffedDay]
 
 def transform_request(req: SolveRequest) -> Dict[str, Any]:
     # Convert new frontend payload to old backend dict structure

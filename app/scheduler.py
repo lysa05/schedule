@@ -551,11 +551,19 @@ def solve_schedule(data_input):
     # Solve
     print("Solving...")
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = 60.0
+    
+    # Configurable time limit
+    import os
+    time_limit = int(os.environ.get('SCHEDULER_SOLVER_TIME_LIMIT_SECONDS', 300))
+    solver.parameters.max_time_in_seconds = float(time_limit)
+    
     status = solver.Solve(model)
     
     result = {
         "status": solver.StatusName(status),
+        "solver_status": solver.StatusName(status),
+        "solve_time_seconds": solver.WallTime(),
+        "best_bound": solver.BestObjectiveBound(),
         "objective_value": solver.ObjectiveValue(),
         "schedule": {},
         "employees": [],
