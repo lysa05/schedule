@@ -7,7 +7,7 @@ import { ResultsView } from './components/ResultsView';
 import type { SolveResponse, SpecialDayType } from './types';
 
 // IMPORTANT: Replace with your Render URL after deployment
-const API_URL = "http://127.0.0.1:8000/solve";
+const API_URL = "https://scheduler-api-wsfi.onrender.com/solve";
 
 const App: React.FC = () => {
   // State
