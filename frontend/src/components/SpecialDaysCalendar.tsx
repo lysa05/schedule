@@ -68,7 +68,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
         switch (type) {
             case 'busy': return 'bg-amber-100 border-amber-300 text-amber-800';
             case 'holiday_closed': return 'bg-red-100 border-red-300 text-red-800';
-            case 'holiday_open': return 'bg-purple-100 border-purple-300 text-purple-800';
+            case 'holiday_open': return 'bg-green-100 border-green-300 text-green-800';
             case 'holiday_short': return 'bg-blue-100 border-blue-300 text-blue-800';
             default: return 'bg-white border-slate-200 text-slate-700 hover:border-blue-300';
         }
@@ -182,7 +182,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                         {[
                                             { id: 'normal', label: 'Normal day', color: 'text-slate-700 hover:bg-slate-50' },
                                             { id: 'busy', label: 'Busy day', color: 'text-amber-700 hover:bg-amber-50' },
-                                            { id: 'holiday_open', label: 'Public holiday (store open)', color: 'text-purple-700 hover:bg-purple-50' },
+                                            { id: 'holiday_open', label: 'Public holiday (store open)', color: 'text-green-700 hover:bg-green-50' },
                                             { id: 'holiday_closed', label: 'Store closed', color: 'text-red-700 hover:bg-red-50' },
                                             { id: 'holiday_short', label: 'Short opening hours', color: 'text-blue-700 hover:bg-blue-50' },
                                         ].map(opt => (
