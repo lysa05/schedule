@@ -57,43 +57,75 @@ def get_paid_hours(employee, closed_holidays, special_days):
             
     return paid_hours, paid_days, credit
 
-def calculate_daily_staff_needs(employees, year, month, day, config, heavy_days=None):
+def calculate_monthly_staffing(employees, year, month, config, heavy_days):
     """
-    Calculates required staff for a given day based on total hours fund.
+    Calculates staff needs for the entire month to ensure total hours fund is utilized.
+    Uses Largest Remainder Method to distribute shifts.
     """
-    # 1. Calculate Total Hours Fund
-    total_hours_fund = 0
-    for emp in employees:
-        total_hours_fund += emp.get('hours_fund', 0)
-        
-    # 2. Estimate total shifts needed
-    # Avg shift length ~9.5h
-    total_shifts_needed = total_hours_fund / 9.5
+    # 1. Calculate Total Shifts Needed
+    total_hours_fund = sum(emp.get('hours_fund', 0) for emp in employees)
+    avg_shift_len = 9.5
+    total_shifts = int(round(total_hours_fund / avg_shift_len))
     
-    # 3. Distribute shifts across days
     _, num_days = calendar.monthrange(year, month)
     
-    # Base staff per day
-    avg_staff = total_shifts_needed / num_days
+    # 2. Calculate Weights (Busy Weekends vs Uniform)
+    day_weights = {}
+    total_weight = 0.0
     
-    # Adjust for weekends if requested
-    weekday = calendar.weekday(year, month, day) # 0=Mon, 6=Sun
+    busy_weekends = config.get('busy_weekends', False)
     
-    if config.get('busy_weekends', False):
-        # Fri, Sat, Sun need more staff
-        if weekday >= 4: # Fri, Sat, Sun
-            req_staff = math.ceil(avg_staff * 1.2)
-        else:
-            req_staff = math.floor(avg_staff * 0.9)
-            if req_staff < 2: req_staff = 2
-    else:
-        req_staff = round(avg_staff)
+    for day in range(1, num_days + 1):
+        weight = 1.0
+        if busy_weekends:
+            weekday = calendar.weekday(year, month, day) # 0=Mon, 6=Sun
+            if weekday >= 4: # Fri, Sat, Sun
+                weight = 1.4 # 40% more staff on weekends
+            else:
+                weight = 0.9 # Slightly less on weekdays
         
-    # Heavy Days Logic
-    if heavy_days and str(day) in heavy_days:
-        req_staff += heavy_days[str(day)].get('extra_staff', 0)
+        day_weights[day] = weight
+        total_weight += weight
         
-    return int(req_staff)
+    # 3. Distribute Shifts (Largest Remainder Method)
+    allocations = {}
+    remainders = {}
+    current_total = 0
+    
+    for day in range(1, num_days + 1):
+        share = total_shifts * (day_weights[day] / total_weight)
+        allocations[day] = int(share)
+        remainders[day] = share - int(share)
+        current_total += allocations[day]
+        
+    # Distribute missing shifts to days with highest remainders
+    missing = total_shifts - current_total
+    
+    # Sort days by remainder (descending)
+    # If remainders are equal (e.g. uniform weights), this will pick days 1..N
+    # To make it fair/random for uniform case, we could shuffle, but stable sort is fine for now.
+    # Maybe prioritize Fridays/Saturdays slightly even in uniform mode if we wanted, but let's stick to math.
+    sorted_days = sorted(remainders.keys(), key=lambda d: remainders[d], reverse=True)
+    
+    for i in range(missing):
+        day = sorted_days[i % num_days]
+        allocations[day] += 1
+        
+    # 4. Apply Heavy Days (Extra Staff)
+    if heavy_days:
+        for day_str, info in heavy_days.items():
+            d = int(day_str)
+            if d in allocations:
+                allocations[d] += info.get('extra_staff', 0)
+                
+    # 5. Ensure Minimums (Safety Net)
+    # If we have very few hours, we might drop below 2. 
+    # But we can't magically create more hours. The solver will just have to do its best 
+    # or we accept that 2 is hard min and we might go over budget.
+    # Let's enforce the hard min of 2 (or min_openers + min_closers) if possible?
+    # No, let's trust the hours fund. If they only have hours for 1 person, so be it.
+    
+    return allocations
 
 def generate_shift_templates(day, special_days, default_open=8.5, default_close=21.0):
     # Define possible shifts for a given day
@@ -298,6 +330,9 @@ def solve_schedule(data_input):
     day_shape_vars = []
     understaff_info = {} # day -> {needed, available, deficit}
     
+    # Pre-calculate staffing for the whole month
+    monthly_staff_reqs = calculate_monthly_staffing(employees, year, month, config, heavy_days)
+    
     # Manager roles
     manager_roles = config.get('manager_roles', ["manager", "deputy", "supervisor"])
     manager_ids = [i for i, emp in enumerate(employees) if emp.get('role') in manager_roles]
@@ -305,7 +340,7 @@ def solve_schedule(data_input):
     for day in range(1, num_days + 1):
         if day in closed_holidays: continue
         
-        req_staff = calculate_daily_staff_needs(employees, year, month, day, config, heavy_days)
+        req_staff = monthly_staff_reqs.get(day, 2)
         if str(day) in special_days:
             req_staff = special_days[str(day)].get('staff', req_staff)
             
