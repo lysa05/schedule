@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "month": 12,
-  "full_time_hours": 168,
+  "full_time_hours": 184,
   "config": {
     "busy_weekends": true,
     "manager_roles": [
@@ -10,7 +10,7 @@
     ],
     "min_openers": 1,
     "min_closers": 1,
-    "default_open_time": "09:00",
+    "default_open_time": "08:30",
     "default_close_time": "21:00"
   },
   "employees": [
@@ -25,17 +25,17 @@
       "name": "Bob",
       "role": "deputy",
       "contract_type": 1.0,
-      "unavailable_days": [
-        18,
-        10
-      ],
+      "unavailable_days": [],
       "vacation_days": []
     },
     {
       "name": "Charlie",
       "role": "assistant",
       "contract_type": 0.75,
-      "unavailable_days": [],
+      "unavailable_days": [
+        17,
+        11
+      ],
       "vacation_days": []
     },
     {
@@ -43,19 +43,23 @@
       "role": "assistant",
       "contract_type": 0.5,
       "unavailable_days": [
-        6,
-        16
+        19,
+        18,
+        25,
+        8,
+        21
       ],
       "vacation_days": []
     },
     {
       "name": "Eve",
       "role": "assistant",
-      "contract_type": 0.25,
+      "contract_type": 0.5,
       "unavailable_days": [
-        19,
-        10,
-        26
+        8,
+        31,
+        20,
+        30
       ],
       "vacation_days": []
     }
@@ -63,7 +67,7 @@
   "special_days": {
     "24": {
       "type": "holiday_short_paid",
-      "open": "09:00",
+      "open": "08:30",
       "close": "14:00"
     },
     "25": {
@@ -74,7 +78,7 @@
     },
     "31": {
       "type": "holiday_short_unpaid",
-      "open": "09:00",
+      "open": "08:30",
       "close": "16:00"
     }
   },

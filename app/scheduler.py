@@ -1,6 +1,7 @@
 import json
 import calendar
 import math
+import time
 from ortools.sat.python import cp_model
 
 def load_data(filename):
@@ -460,35 +461,36 @@ def solve_schedule(data_input):
                 
     # 4. Soft Clopen Ban
     clopen_vars = []
-    for i in range(len(employees)):
-        for day in range(1, num_days):
-            if day in closed_holidays or (day+1) in closed_holidays:
-                continue
-                
-            close_vars = []
-            for s_idx, t in enumerate(day_templates[day]):
-                if t['type'] in ('CLOSE', 'FIXED'):
-                    if (i, day, s_idx) in work:
-                        close_vars.append(work[(i, day, s_idx)])
-                        
-            open_vars_next = []
-            for s_idx, t in enumerate(day_templates.get(day+1, [])):
-                if t['type'] in ('OPEN', 'FIXED'):
-                    if (i, day+1, s_idx) in work:
-                        open_vars_next.append(work[(i, day+1, s_idx)])
-                        
-            if close_vars and open_vars_next:
-                has_close = model.NewBoolVar(f'has_close_{i}_{day}')
-                model.AddMaxEquality(has_close, close_vars)
-                
-                has_open_next = model.NewBoolVar(f'has_open_{i}_{day+1}')
-                model.AddMaxEquality(has_open_next, open_vars_next)
-                
-                clopen = model.NewBoolVar(f'clopen_{i}_{day}')
-                model.AddBoolAnd([has_close, has_open_next]).OnlyEnforceIf(clopen)
-                model.AddBoolOr([has_close.Not(), has_open_next.Not(), clopen])
-                
-                clopen_vars.append(clopen)
+    if config.get('enable_clopen_ban', True):
+        for i in range(len(employees)):
+            for day in range(1, num_days):
+                if day in closed_holidays or (day+1) in closed_holidays:
+                    continue
+                    
+                close_vars = []
+                for s_idx, t in enumerate(day_templates[day]):
+                    if t['type'] in ('CLOSE', 'FIXED'):
+                        if (i, day, s_idx) in work:
+                            close_vars.append(work[(i, day, s_idx)])
+                            
+                open_vars_next = []
+                for s_idx, t in enumerate(day_templates.get(day+1, [])):
+                    if t['type'] in ('OPEN', 'FIXED'):
+                        if (i, day+1, s_idx) in work:
+                            open_vars_next.append(work[(i, day+1, s_idx)])
+                            
+                if close_vars and open_vars_next:
+                    has_close = model.NewBoolVar(f'has_close_{i}_{day}')
+                    model.AddMaxEquality(has_close, close_vars)
+                    
+                    has_open_next = model.NewBoolVar(f'has_open_{i}_{day+1}')
+                    model.AddMaxEquality(has_open_next, open_vars_next)
+                    
+                    clopen = model.NewBoolVar(f'clopen_{i}_{day}')
+                    model.AddBoolAnd([has_close, has_open_next]).OnlyEnforceIf(clopen)
+                    model.AddBoolOr([has_close.Not(), has_open_next.Not(), clopen])
+                    
+                    clopen_vars.append(clopen)
 
     # Fairness
     fairness_vars = []
@@ -598,6 +600,9 @@ def solve_schedule(data_input):
     import os
     time_limit = int(os.environ.get('SCHEDULER_SOLVER_TIME_LIMIT_SECONDS', 300))
     solver.parameters.max_time_in_seconds = float(time_limit)
+    
+    # Stop if within 5% of optimal
+    solver.parameters.relative_gap_limit = 0.05
     
     status = solver.Solve(model)
     

@@ -1,7 +1,7 @@
 {
   "year": 2025,
   "month": 12,
-  "full_time_hours": 168,
+  "full_time_hours": 184,
   "config": {
     "busy_weekends": true,
     "manager_roles": [
@@ -10,7 +10,7 @@
     ],
     "min_openers": 2,
     "min_closers": 2,
-    "default_open_time": "09:00",
+    "default_open_time": "08:30",
     "default_close_time": "21:00"
   },
   "employees": [
@@ -25,17 +25,23 @@
       "name": "Bob",
       "role": "deputy",
       "contract_type": 1.0,
-      "unavailable_days": [],
+      "unavailable_days": [
+        6,
+        13
+      ],
       "vacation_days": [
-        3,
-        4
+        4,
+        5
       ]
     },
     {
       "name": "Charlie",
       "role": "deputy",
       "contract_type": 1.0,
-      "unavailable_days": [],
+      "unavailable_days": [
+        17,
+        22
+      ],
       "vacation_days": []
     },
     {
@@ -44,8 +50,8 @@
       "contract_type": 1.0,
       "unavailable_days": [],
       "vacation_days": [
-        7,
-        8
+        1,
+        2
       ]
     },
     {
@@ -54,10 +60,9 @@
       "contract_type": 1.0,
       "unavailable_days": [],
       "vacation_days": [
-        14,
-        15,
-        16,
-        17
+        5,
+        6,
+        7
       ]
     },
     {
@@ -85,16 +90,19 @@
       "name": "Ivan",
       "role": "assistant",
       "contract_type": 0.75,
-      "unavailable_days": [],
+      "unavailable_days": [
+        25,
+        10,
+        17,
+        26
+      ],
       "vacation_days": []
     },
     {
       "name": "Judy",
       "role": "assistant",
       "contract_type": 0.75,
-      "unavailable_days": [
-        11
-      ],
+      "unavailable_days": [],
       "vacation_days": []
     },
     {
@@ -116,32 +124,29 @@
       "role": "assistant",
       "contract_type": 0.75,
       "unavailable_days": [
-        20,
-        24,
+        25,
+        2,
+        15,
+        7,
         19
       ],
-      "vacation_days": [
-        9,
-        10,
-        11
-      ]
+      "vacation_days": []
     },
     {
       "name": "Noah",
       "role": "assistant",
       "contract_type": 0.75,
-      "unavailable_days": [
-        10,
-        11,
-        14
-      ],
+      "unavailable_days": [],
       "vacation_days": []
     },
     {
       "name": "Olivia",
       "role": "assistant",
       "contract_type": 0.75,
-      "unavailable_days": [],
+      "unavailable_days": [
+        30,
+        3
+      ],
       "vacation_days": []
     },
     {
@@ -162,7 +167,10 @@
       "name": "Rupert",
       "role": "assistant",
       "contract_type": 0.5,
-      "unavailable_days": [],
+      "unavailable_days": [
+        31,
+        17
+      ],
       "vacation_days": []
     },
     {
@@ -170,20 +178,34 @@
       "role": "assistant",
       "contract_type": 0.5,
       "unavailable_days": [],
-      "vacation_days": []
+      "vacation_days": [
+        10,
+        11,
+        12,
+        13
+      ]
     },
     {
       "name": "Ted",
       "role": "assistant",
       "contract_type": 0.5,
-      "unavailable_days": [],
+      "unavailable_days": [
+        30,
+        13
+      ],
       "vacation_days": []
     },
     {
       "name": "Ursula",
       "role": "assistant",
       "contract_type": 0.5,
-      "unavailable_days": [],
+      "unavailable_days": [
+        23,
+        6,
+        28,
+        29,
+        30
+      ],
       "vacation_days": []
     },
     {
@@ -196,27 +218,30 @@
     {
       "name": "Walter",
       "role": "assistant",
-      "contract_type": 0.25,
+      "contract_type": 0.5,
       "unavailable_days": [
-        19,
-        27
+        14,
+        15,
+        12,
+        7
       ],
-      "vacation_days": []
+      "vacation_days": [
+        9,
+        10,
+        11
+      ]
     },
     {
       "name": "Xena",
       "role": "assistant",
-      "contract_type": 0.25,
+      "contract_type": 0.5,
       "unavailable_days": [],
-      "vacation_days": [
-        12,
-        13
-      ]
+      "vacation_days": []
     },
     {
       "name": "Yvonne",
       "role": "assistant",
-      "contract_type": 0.25,
+      "contract_type": 0.5,
       "unavailable_days": [],
       "vacation_days": []
     }
@@ -224,7 +249,7 @@
   "special_days": {
     "24": {
       "type": "holiday_short_paid",
-      "open": "09:00",
+      "open": "08:30",
       "close": "14:00"
     },
     "25": {
@@ -235,7 +260,7 @@
     },
     "31": {
       "type": "holiday_short_unpaid",
-      "open": "09:00",
+      "open": "08:30",
       "close": "16:00"
     }
   },

@@ -4,8 +4,10 @@ import json
 import statistics
 import time
 
-# Add app directory to path
-sys.path.append(os.path.join(os.getcwd(), 'app'))
+# Add app directory to path (parent of tests directory + /app)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+sys.path.append(os.path.join(project_root, 'app'))
 
 from scheduler import solve_schedule, parse_time
 
@@ -99,8 +101,11 @@ def analyze_results(scenario_name, result, data):
 def run_tests():
     scenarios = ['small', 'medium', 'large']
     
+    # Determine directories
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
     for size in scenarios:
-        filename = f"tests/data_{size}.json"
+        filename = os.path.join(script_dir, f"data_{size}.json")
         print(f"\n\n==================================================")
         print(f"RUNNING SCENARIO: {size.upper()}")
         print(f"==================================================")

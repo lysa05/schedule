@@ -13,15 +13,15 @@ def generate_scenario(size, filename):
     if size == 'small':
         num_employees = 5
         roles = ['manager', 'deputy', 'assistant', 'assistant', 'assistant']
-        ftes = [1.0, 1.0, 0.75, 0.5, 0.25] # Varied FTEs
+        ftes = [1.0, 1.0, 0.75, 0.5, 0.5] # Removed 0.25
     elif size == 'medium':
         num_employees = 15
         roles = ['manager', 'deputy', 'deputy'] + ['supervisor']*2 + ['assistant']*10
-        ftes = [1.0]*5 + [0.75]*5 + [0.5]*3 + [0.25]*2
+        ftes = [1.0]*5 + [0.75]*5 + [0.5]*5 # Removed 0.25s, added to 0.5
     else: # large
         num_employees = 25
         roles = ['manager', 'deputy', 'deputy'] + ['supervisor']*4 + ['assistant']*18
-        ftes = [1.0]*8 + [0.75]*8 + [0.5]*6 + [0.25]*3
+        ftes = [1.0]*8 + [0.75]*8 + [0.5]*9 # Removed 0.25s, added to 0.5
         
     # Employees
     employees = []
@@ -37,8 +37,9 @@ def generate_scenario(size, filename):
         
         # Random constraints
         unavailable = []
-        if random.random() < 0.3: # 30% chance of unavailable days
-            unavailable = random.sample(range(1, 32), k=random.randint(1, 3))
+        # Increased probability (0.3 -> 0.5) and max days (3 -> 5) for realism
+        if random.random() < 0.5: 
+            unavailable = random.sample(range(1, 32), k=random.randint(2, 5))
             
         vacation = []
         if random.random() < 0.2: # 20% chance of vacation
@@ -56,10 +57,10 @@ def generate_scenario(size, filename):
         
     # Special Days (December Logic)
     special_days = {
-        "24": {"type": "holiday_short_paid", "open": "09:00", "close": "14:00"},
+        "24": {"type": "holiday_short_paid", "open": "08:30", "close": "14:00"},
         "25": {"type": "holiday_closed"},
         "26": {"type": "holiday_closed"},
-        "31": {"type": "holiday_short_unpaid", "open": "09:00", "close": "16:00"}
+        "31": {"type": "holiday_short_unpaid", "open": "08:30", "close": "16:00"}
     }
     
     # Busy weekends (Fri, Sat, Sun)
@@ -72,15 +73,13 @@ def generate_scenario(size, filename):
     data = {
         "year": year,
         "month": month,
-        "full_time_hours": 168, # Dec 2025 has 23 working days * 8 = 184? No, let's use standard ~168 or auto-calc
-        # Actually, let's leave it to the solver to calc individual targets based on FTE * full_time
-        # Standard month is often 160-176. Let's say 168.
+        "full_time_hours": 184, # Updated to 184
         "config": {
             "busy_weekends": True,
             "manager_roles": ["manager", "deputy"],
             "min_openers": 1 if size == 'small' else 2,
             "min_closers": 1 if size == 'small' else 2,
-            "default_open_time": "09:00",
+            "default_open_time": "08:30", # Updated to 08:30
             "default_close_time": "21:00"
         },
         "employees": employees,
@@ -99,6 +98,10 @@ def generate_scenario(size, filename):
         json.dump(data, f, indent=2)
 
 if __name__ == "__main__":
-    generate_scenario('small', 'tests/data_small.json')
-    generate_scenario('medium', 'tests/data_medium.json')
-    generate_scenario('large', 'tests/data_large.json')
+    # Determine the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Generate files in the same directory as the script
+    generate_scenario('small', os.path.join(script_dir, 'data_small.json'))
+    generate_scenario('medium', os.path.join(script_dir, 'data_medium.json'))
+    generate_scenario('large', os.path.join(script_dir, 'data_large.json'))
