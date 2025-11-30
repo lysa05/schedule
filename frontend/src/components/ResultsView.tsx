@@ -308,23 +308,18 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                                             </span>
                                                                         )}
                                                                         {isVacation && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium border border-orange-200" title="Paid vacation">
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200" title="Paid vacation">
                                                                                 VACATION {credit}h
                                                                             </span>
                                                                         )}
-                                                                        {isHolidayClosed && !isVacation && ( // Vacation takes precedence usually? Or holiday? Let's assume holiday overrides vacation if store closed? Or vacation is paid anyway.
-                                                                            // If store is closed, everyone gets holiday pay usually, unless on vacation.
-                                                                            // If on vacation during holiday, usually it counts as holiday not vacation day deducted.
-                                                                            // But for simplicity, let's just show what is in data.
-                                                                            // If user marked vacation on a closed holiday, it's weird.
-                                                                            // Let's show Holiday if closed.
+                                                                        {isHolidayClosed && (
                                                                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200" title="Store closed - Paid holiday">
                                                                                 HOLIDAY {credit}h
                                                                             </span>
                                                                         )}
-                                                                        {isHolidayOpen && !isVacation && !isUnavailable && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium border border-purple-200" title="Store open - Paid holiday">
-                                                                                HOLIDAY PAID {credit}h
+                                                                        {isHolidayOpen && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200" title="Store open - Paid holiday">
+                                                                                HOLIDAY {credit}h
                                                                             </span>
                                                                         )}
                                                                         {!isUnavailable && !isVacation && !isHolidayClosed && !isHolidayOpen && (
@@ -357,16 +352,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                 <span>Worked shift</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-orange-100 border border-orange-200 rounded"></div>
-                                <span>Vacation (paid)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                                <span>Holiday - store closed (paid)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-purple-100 border border-purple-200 rounded"></div>
-                                <span>Holiday - store open (paid)</span>
+                                <span>Vacation / Holiday (paid)</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded opacity-50"></div>
