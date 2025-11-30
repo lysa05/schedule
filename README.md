@@ -29,11 +29,12 @@ A Python-based automated shift scheduling tool designed for retail stores. It ha
 
 ## 📂 File Structure
 
-- `scheduler_scalable.py`: The main logic script.
-- `data_scalable.json`: Configuration file for employees, store settings, and holidays.
-- `scheduler.py` / `data.json`: Legacy versions (for smaller/simpler use cases).
+- `app/scheduler.py`: The main logic script using OR-Tools.
+- `app/main.py`: FastAPI application entry point.
+- `tests/`: Stress testing suite and data generators.
+- `data_scalable.json`: Configuration file example.
 
-## ⚙️ Configuration (`data_scalable.json`)
+## ⚙️ Configuration
 
 ### Global Settings
 ```json
@@ -45,7 +46,8 @@ A Python-based automated shift scheduling tool designed for retail stores. It ha
         "auto_staffing": true,      // Calculate staff needs automatically
         "busy_weekends": true,      // Add +1 staff on Fri/Sat/Sun
         "min_openers": 1,           // Minimum people starting at Open
-        "min_closers": 1            // Minimum people ending at Close
+        "min_closers": 1,           // Minimum people ending at Close
+        "enable_clopen_ban": true   // Prevent Close -> Open shifts
     }
 }
 ```
@@ -54,41 +56,38 @@ A Python-based automated shift scheduling tool designed for retail stores. It ha
 ```json
 {
     "closed_holidays": [25, 26],    // Shop Closed (Paid)
-    "open_holidays": [24],          // Shop Open (Normal)
     "special_days": {
-        "24": {"close": "12:00", "staff": 2},
-        "31": {"close": "17:00", "staff": 3}
+        "24": {"type": "holiday_short_paid", "open": "08:30", "close": "14:00"},
+        "31": {"type": "holiday_short_unpaid", "open": "08:30", "close": "16:00"}
     }
-}
-```
-
-### Employees
-```json
-{
-    "name": "Kuba",
-    "contract_type": 1.0,           // 1.0 = Full Time, 0.5 = Half Time, etc.
-    "unavailable_days": [6, 7],     // Requested days off
-    "vacation_days": []             // Paid vacation days
 }
 ```
 
 ## 🏃 How to Run
 
-1.  **Install Python**: Ensure you have Python installed.
-2.  **Configure**: Edit `data_scalable.json` with your current month's data.
-3.  **Run**:
+1.  **Install Dependencies**:
     ```bash
-    python scheduler_scalable.py
+    pip install -r requirements.txt
     ```
-4.  **Output**: The script will print the optimized schedule and employee statistics to the console.
+2.  **Run Application**:
+    ```bash
+    python app/main.py
+    ```
 
-## 📊 Example Output
+## 🧪 Stress Testing & QA
 
-```text
-Day      |      Kuba       |     Andrii      | ...
---------------------------------------------------
-1 Mon    |   08:30-18:00   |   13:00-21:00   | ...
-...
-24 Wed*! |   08:30-12:00   |        v        | ...
-25 Thu   |    HOL (8h)     |    HOL (8h)     | ...
+The project includes a comprehensive stress testing suite to ensure model quality and performance across different store sizes.
+
+### Features
+- **Realistic Data Generation**: Creates complex scenarios (Small/Medium/Large stores) with December holidays and varied employee constraints.
+- **"Human" Metrics**: Evaluates schedules not just for technical correctness but for fairness, open/close balance, and "clopen" avoidance.
+- **Performance Tuning**:
+    - **Gap Limit**: Solver stops when within 5% of optimal (`relative_gap_limit = 0.05`).
+    - **Optional Clopen Ban**: Can be toggled for performance (`enable_clopen_ban`).
+
+### Running Tests
+```bash
+cd tests
+python3 generate_stress_data.py  # Generate scenarios
+python3 run_stress_tests.py      # Run solver and analyze results
 ```
