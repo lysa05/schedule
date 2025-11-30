@@ -287,7 +287,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                                 {shift ? (
                                                                     <div className={`relative text-xs p-1 rounded border w-full text-center ${shift.type === 'OPEN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                                                                         shift.type === 'CLOSE' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                                                            shift.type === 'FLEX' ? 'bg-teal-100 text-teal-800 border-teal-200' :
+                                                                            shift.type === 'FLEX' ? 'bg-green-100 text-green-800 border-green-200' :
                                                                                 shift.type === 'MANUAL' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                                                                                     'bg-slate-100 text-slate-800 border-slate-200'
                                                                         } ${isUnavailable ? 'ring-2 ring-red-400 ring-offset-1' : ''}`}
@@ -303,22 +303,22 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                                     <>
                                                                         {/* No Shift - Show status pills */}
                                                                         {isUnavailable && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200">
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200">
                                                                                 UNAVAILABLE
                                                                             </span>
                                                                         )}
                                                                         {isVacation && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-100 text-pink-800 font-medium border border-pink-200" title="Paid vacation">
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium border border-orange-200" title="Paid vacation">
                                                                                 VACATION {credit}h
                                                                             </span>
                                                                         )}
                                                                         {isHolidayClosed && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium border border-emerald-200" title="Store closed - Paid holiday">
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-medium border border-teal-200" title="Store closed - Paid holiday">
                                                                                 HOLIDAY {credit}h
                                                                             </span>
                                                                         )}
                                                                         {isHolidayOpen && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium border border-emerald-200" title="Store open - Paid holiday">
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-medium border border-teal-200" title="Store open - Paid holiday">
                                                                                 HOLIDAY {credit}h
                                                                             </span>
                                                                         )}
@@ -326,13 +326,6 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                                             <span className="text-slate-300 text-xs">-</span>
                                                                         )}
                                                                     </>
-                                                                )}
-
-                                                                {/* Badges for working on holiday */}
-                                                                {shift && isHolidayOpen && (
-                                                                    <span className="text-[9px] px-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium">
-                                                                        HOLIDAY +{credit}h
-                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -356,19 +349,19 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                 <span>Close shift</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-teal-100 border border-teal-200 rounded"></div>
+                                <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
                                 <span>Middle shift</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-pink-100 border border-pink-200 rounded"></div>
+                                <div className="w-3 h-3 bg-orange-100 border border-orange-200 rounded"></div>
                                 <span>Vacation (paid)</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded"></div>
+                                <div className="w-3 h-3 bg-teal-100 border border-teal-200 rounded"></div>
                                 <span>Holiday (paid)</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-slate-100 border border-slate-200 rounded"></div>
+                                <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
                                 <span>Unavailable / Day off</span>
                             </div>
                         </div>
