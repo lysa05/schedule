@@ -188,6 +188,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year, 
                                             <th className="px-4 py-2 border-b text-right">Diff</th>
                                             <th className="px-4 py-2 border-b text-right">Opens</th>
                                             <th className="px-4 py-2 border-b text-right">Closes</th>
+                                            <th className="px-4 py-2 border-b text-right">Middle</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -201,6 +202,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year, 
                                                 </td>
                                                 <td className="px-4 py-2 text-right text-slate-500">{emp.opens}</td>
                                                 <td className="px-4 py-2 text-right text-slate-500">{emp.closes}</td>
+                                                <td className="px-4 py-2 text-right text-slate-500">{emp.middle}</td>
                                             </tr>
                                         ))}
                                     </tbody>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { SpecialDaysCalendar } from './components/SpecialDaysCalendar';
 import { StoreConfiguration } from './components/StoreConfiguration';
 import { GenerateSection } from './components/GenerateSection';
@@ -33,30 +33,10 @@ const App: React.FC = () => {
 
   const [results, setResults] = useState<SolveResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
 
   const resultsRef = useRef<HTMLDivElement>(null);
-
-  // Progress simulation
-  useEffect(() => {
-    let interval: any;
-    if (loading) {
-      setProgress(0);
-      interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 90) return prev;
-          // Slow down as it gets higher
-          const step = Math.max(0.5, (90 - prev) / 50);
-          return prev + step;
-        });
-      }, 100);
-    } else {
-      setProgress(100);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -151,20 +131,6 @@ const App: React.FC = () => {
           month={month}
           year={year}
         />
-
-        {/* Progress Bar Overlay */}
-        {loading && (
-          <div className="fixed inset-0 bg-white/80 z-40 flex flex-col items-center justify-center">
-            <div className="w-64 bg-slate-200 rounded-full h-2.5 mb-4 overflow-hidden">
-              <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <p className="text-slate-600 font-medium animate-pulse">Generating schedule...</p>
-            <p className="text-slate-400 text-sm mt-1">This can take up to a few minutes.</p>
-          </div>
-        )}
 
         <GenerateSection
           onGenerate={handleGenerate}

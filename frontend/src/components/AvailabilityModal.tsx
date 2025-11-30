@@ -11,7 +11,7 @@ interface AvailabilityModalProps {
     onSave: (unavailable: number[], vacation: number[]) => void;
 }
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
     isOpen, onClose, employeeName, month, year, unavailableDays, vacationDays, onSave
@@ -20,6 +20,10 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
 
     const numDays = new Date(year, month, 0).getDate();
     const days = Array.from({ length: numDays }, (_, i) => i + 1);
+
+    // Calculate offset for the first day of the month (Monday = 0, Sunday = 6)
+    const firstDayWeekday = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+    const emptyDays = Array.from({ length: firstDayWeekday }, (_, i) => i);
 
     const toggleDay = (day: number, type: 'unavailable' | 'vacation') => {
         let newUnavailable = [...unavailableDays];
@@ -43,11 +47,6 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
         onSave(newUnavailable, newVacation);
     };
 
-    const getWeekday = (day: number) => {
-        const date = new Date(year, month - 1, day);
-        return WEEKDAYS[date.getDay()];
-    };
-
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -59,17 +58,29 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
                 </div>
 
                 <div className="p-4 overflow-y-auto">
+                    {/* Weekday Headers */}
+                    <div className="grid grid-cols-7 gap-2 mb-2">
+                        {WEEKDAYS.map(day => (
+                            <div key={day} className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
                     <div className="grid grid-cols-7 gap-2">
+                        {/* Empty Placeholders */}
+                        {emptyDays.map(i => (
+                            <div key={`empty-${i}`} className="border border-slate-100 rounded-lg p-2 bg-slate-50/50"></div>
+                        ))}
+
                         {days.map(day => {
                             const isUnavailable = unavailableDays.includes(day);
                             const isVacation = vacationDays.includes(day);
-                            const weekday = getWeekday(day);
 
                             return (
                                 <div key={day} className="border border-slate-200 rounded-lg p-2 flex flex-col gap-2">
                                     <div className="text-center">
                                         <span className="block font-semibold text-slate-900">{day}</span>
-                                        <span className="block text-[10px] text-slate-500 uppercase">{weekday}</span>
                                     </div>
 
                                     <div className="flex flex-col gap-1">

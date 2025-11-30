@@ -18,7 +18,7 @@ const MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ];
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Generate time options from 06:00 to 23:00 in 30 min increments
 const TIME_OPTIONS = Array.from({ length: 35 }, (_, i) => {
@@ -36,6 +36,10 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
     const days = Array.from({ length: numDays }, (_, i) => i + 1);
     const [openPopover, setOpenPopover] = useState<number | null>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
+
+    // Calculate offset for the first day of the month (Monday = 0, Sunday = 6)
+    const firstDayWeekday = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+    const emptyDays = Array.from({ length: firstDayWeekday }, (_, i) => i);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -84,11 +88,6 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
             case 'holiday_short': return 'SHORT';
             default: return 'NORMAL';
         }
-    };
-
-    const getWeekday = (day: number) => {
-        const date = new Date(year, month - 1, day);
-        return WEEKDAYS[date.getDay()];
     };
 
     return (
@@ -147,11 +146,24 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                 </div>
             </div>
 
+            {/* Weekday Headers */}
+            <div className="grid grid-cols-7 gap-2 mb-2">
+                {WEEKDAYS.map(day => (
+                    <div key={day} className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        {day}
+                    </div>
+                ))}
+            </div>
+
             <div className="grid grid-cols-7 gap-2 relative">
+                {/* Empty Placeholders */}
+                {emptyDays.map(i => (
+                    <div key={`empty-${i}`} className="w-full aspect-square rounded-lg border border-slate-100 bg-slate-50/50"></div>
+                ))}
+
                 {days.map(day => {
                     const data = getDayData(day);
                     const isOpen = openPopover === day;
-                    const weekday = getWeekday(day);
 
                     return (
                         <div key={day} className="relative">
@@ -165,7 +177,6 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                             >
                                 <div className="flex items-baseline gap-1">
                                     <span className="font-semibold text-lg leading-none">{day}</span>
-                                    <span className="text-[10px] text-slate-500 font-medium">{weekday}</span>
                                 </div>
 
                                 <span className="text-[9px] uppercase font-bold tracking-wider opacity-80 leading-tight mt-1">
