@@ -352,8 +352,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                 <span>Worked shift</span>
                             </div>
                             <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-pink-100 border border-pink-200 rounded"></div>
+                                <span>Vacation (paid)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-                                <span>Vacation / Holiday (paid)</span>
+                                <span>Holiday (paid)</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded opacity-50"></div>
