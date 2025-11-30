@@ -26,7 +26,7 @@ def fmt_time(t):
     m = int(round((t - h) * 60))
     return f"{h:02d}:{m:02d}"
 
-def get_paid_hours(employee, closed_holidays):
+def get_paid_hours(employee, closed_holidays, special_days):
     ctype = employee.get('contract_type', 1.0)
     if ctype >= 1.0: credit = 8.0
     elif ctype >= 0.75: credit = 6.0
@@ -34,13 +34,26 @@ def get_paid_hours(employee, closed_holidays):
     
     paid_hours = 0
     paid_days = set()
+    
+    # 1. Fully closed holidays
     for h in closed_holidays:
         paid_hours += credit
         paid_days.add(h)
+        
+    # 2. Short Paid Holidays (store open, but paid holiday for everyone)
+    for day_str, info in special_days.items():
+        day = int(day_str)
+        if info.get('type') == 'holiday_short_paid':
+            if day not in paid_days:
+                paid_hours += credit
+                paid_days.add(day)
+                
+    # 3. Vacation days
     for v in employee.get('vacation_days', []):
         if v not in paid_days:
             paid_hours += credit
             paid_days.add(v)
+            
     return paid_hours, paid_days, credit
 
 def calculate_daily_staff_needs(employees, year, month, day, config, heavy_days=None):
@@ -126,7 +139,10 @@ def generate_shift_templates(day, special_days, default_open=8.5, default_close=
                 cost = 20
             else:
                 cost = 100
-                
+            
+            # If it ends at close_time, it's technically a closer too, but let's keep it as OPEN 
+            # if it starts at open_time. Or maybe FIXED? 
+            # Current logic: OPEN starts at open_time.
             templates.append({'type': 'OPEN', 'start': open_time, 'end': end, 'duration': duration, 'cost': cost})
             
     # Closers: End at close_time. Lengths 6.0 to 11.0
@@ -149,12 +165,15 @@ def generate_shift_templates(day, special_days, default_open=8.5, default_close=
              # Penalize half-hour starts slightly
              if start % 1 != 0:
                  cost += 2
-                 
+             
+             # STRICT RULE: Any shift ending at close_time is a CLOSE shift (or OPEN if it covers full day)
+             # We already added OPENs above. If an OPEN shift ends at close_time, it's fine to be called OPEN 
+             # (it's the opener who stays till end). 
+             # But here we generate specific CLOSE shifts.
              templates.append({'type': 'CLOSE', 'start': start, 'end': close_time, 'duration': duration, 'cost': cost})
                  
     # Flex: Start later than open, end before close
     # Start every 1 hour from open_time + 1.5h up to close_time - 6h
-    # This is a bit dynamic. Let's try a range based on open_time.
     
     start_hour_min = math.ceil(open_time + 1.0)
     start_hour_max = math.floor(close_time - 6.0)
@@ -163,19 +182,30 @@ def generate_shift_templates(day, special_days, default_open=8.5, default_close=
         for start in range(start_hour_min, start_hour_max + 1):
             for duration in [6.0, 7.0, 8.0, 9.0, 10.0, 11.0]:
                 end = start + duration
-                if end <= close_time:
+                
+                # STRICT RULE: FLEX shift must NOT end at close_time.
+                if end < close_time:
                     # Flex shifts
                     if duration >= 8.0:
                         base_cost = 0 
                     else:
                         base_cost = 20
                         
-                    # Time Preference: Ideal middle of day?
-                    # Let's just keep simple cost
-                    cost = base_cost
+                    # Time Preference: Bias towards 10:00 - 19:00
+                    # Penalty = weight * (abs(start - 10) + abs(end - 19))
+                    # Let's use a weight of 5 per hour deviation
+                    ideal_start = 10.0
+                    ideal_end = 19.0
+                    
+                    dev_start = abs(start - ideal_start)
+                    dev_end = abs(end - ideal_end)
+                    
+                    time_penalty = 5 * (dev_start + dev_end)
+                    
+                    cost = base_cost + int(time_penalty)
                     
                     templates.append({'type': 'FLEX', 'start': float(start), 'end': end, 'duration': duration, 'cost': cost})
-                
+    
     return templates
 
 def solve_schedule(data_input):
@@ -215,9 +245,21 @@ def solve_schedule(data_input):
     default_close = parse_time(default_close_str)
     
     for day in range(1, num_days + 1):
+        # Skip fully closed holidays
         if day in closed_holidays:
             day_templates[day] = []
             continue
+            
+        # Check for special day type
+        day_type = 'normal'
+        if str(day) in special_days:
+            day_type = special_days[str(day)].get('type', 'normal')
+            
+        # If it's a closed holiday (handled by closed_holidays list usually, but check type too)
+        if day_type == 'holiday_closed':
+            day_templates[day] = []
+            continue
+            
         day_templates[day] = generate_shift_templates(day, special_days, default_open, default_close)
         
     print(f"Generated templates. Max templates per day: {max(len(t) for t in day_templates.values() if t)}")
@@ -501,7 +543,7 @@ def solve_schedule(data_input):
     paid_hours = {}
     targets = {}
     for i, emp in enumerate(employees):
-        ph, _, _ = get_paid_hours(emp, closed_holidays)
+        ph, _, _ = get_paid_hours(emp, closed_holidays, special_days)
         paid_hours[i] = ph
         targets[i] = emp['hours_fund']
         

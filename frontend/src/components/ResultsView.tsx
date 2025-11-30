@@ -274,6 +274,11 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                     const isVacation = empInput?.vacationDays.includes(day);
                                                     const isHolidayClosed = specialDay?.type === 'holiday_closed';
                                                     const isHolidayOpen = specialDay?.type === 'holiday_open';
+                                                    const isHolidayShortPaid = specialDay?.type === 'holiday_short_paid';
+
+                                                    // Paid holiday logic: Closed OR Open OR ShortPaid
+                                                    // If Open or ShortPaid, only if NO shift (handled in rendering)
+                                                    const isPaidHolidayDay = isHolidayClosed || isHolidayOpen || isHolidayShortPaid;
 
                                                     const credit = empInput ? getPaidHoursCredit(empInput.contractFte) : 8;
 
@@ -284,7 +289,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                             onClick={() => handleEditClick(day, emp.name, shift)}
                                                         >
                                                             <div className="flex flex-col gap-1 items-center justify-center min-h-[40px]">
-                                                                {shift ? (
+                                                                {/* 1. Shift Badge */}
+                                                                {shift && (
                                                                     <div className={`relative text-xs p-1 rounded border w-full text-center ${shift.type === 'OPEN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
                                                                         shift.type === 'CLOSE' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                                                                             shift.type === 'FLEX' ? 'bg-green-100 text-green-800 border-green-200' :
@@ -295,37 +301,35 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                                                                     >
                                                                         <div className="font-semibold">{shift.start} - {shift.end}</div>
                                                                         <div className="text-[10px] opacity-75">{shift.type}</div>
-                                                                        {isUnavailable && (
-                                                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                                                                        )}
                                                                     </div>
-                                                                ) : (
+                                                                )}
+
+                                                                {/* 2. Holiday / Vacation Pill (Only if NO shift) */}
+                                                                {!shift && (
                                                                     <>
-                                                                        {/* No Shift - Show status pills */}
-                                                                        {isUnavailable && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200">
-                                                                                UNAVAILABLE
-                                                                            </span>
-                                                                        )}
                                                                         {isVacation && (
                                                                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium border border-orange-200" title="Paid vacation">
                                                                                 VACATION {credit}h
                                                                             </span>
                                                                         )}
-                                                                        {isHolidayClosed && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-medium border border-teal-200" title="Store closed - Paid holiday">
+                                                                        {!isVacation && isPaidHolidayDay && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-medium border border-teal-200" title="Paid holiday">
                                                                                 HOLIDAY {credit}h
                                                                             </span>
-                                                                        )}
-                                                                        {isHolidayOpen && (
-                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-800 font-medium border border-teal-200" title="Store open - Paid holiday">
-                                                                                HOLIDAY {credit}h
-                                                                            </span>
-                                                                        )}
-                                                                        {!isUnavailable && !isVacation && !isHolidayClosed && !isHolidayOpen && (
-                                                                            <span className="text-slate-300 text-xs">-</span>
                                                                         )}
                                                                     </>
+                                                                )}
+
+                                                                {/* 3. Unavailable Pill (Always if unavailable) */}
+                                                                {isUnavailable && (
+                                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200">
+                                                                        UNAVAILABLE
+                                                                    </span>
+                                                                )}
+
+                                                                {/* Empty State */}
+                                                                {!shift && !isUnavailable && !isVacation && !isPaidHolidayDay && (
+                                                                    <span className="text-slate-300 text-xs">-</span>
                                                                 )}
                                                             </div>
                                                         </td>

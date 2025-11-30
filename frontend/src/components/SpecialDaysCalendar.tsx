@@ -75,7 +75,8 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
             case 'busy': return 'bg-amber-100 border-amber-300 text-amber-800';
             case 'holiday_closed': return 'bg-red-100 border-red-300 text-red-800';
             case 'holiday_open': return 'bg-green-100 border-green-300 text-green-800';
-            case 'holiday_short': return 'bg-blue-100 border-blue-300 text-blue-800';
+            case 'holiday_short_paid': return 'bg-blue-100 border-blue-300 text-blue-800';
+            case 'holiday_short_unpaid': return 'bg-slate-100 border-slate-300 text-slate-800';
             default: return 'bg-white border-slate-200 text-slate-700 hover:border-blue-300';
         }
     };
@@ -85,7 +86,8 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
             case 'busy': return 'BUSY';
             case 'holiday_closed': return 'CLOSED';
             case 'holiday_open': return 'HOLIDAY';
-            case 'holiday_short': return 'SHORT';
+            case 'holiday_short_paid': return 'SHORT (PD)';
+            case 'holiday_short_unpaid': return 'SHORT';
             default: return 'NORMAL';
         }
     };
@@ -183,7 +185,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                     {getDayLabel(data.type)}
                                 </span>
 
-                                {data.type === 'holiday_short' && (
+                                {(data.type === 'holiday_short_paid' || data.type === 'holiday_short_unpaid') && (
                                     <div className="flex flex-col items-center mt-0.5">
                                         <span className="text-[9px] font-medium leading-tight opacity-90">
                                             {data.openTime || defaultOpenTime}–{data.closeTime || defaultCloseTime}
@@ -208,7 +210,8 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                             { id: 'busy', label: 'Busy day', color: 'text-amber-700 hover:bg-amber-50' },
                                             { id: 'holiday_open', label: 'Public holiday (store open)', color: 'text-green-700 hover:bg-green-50' },
                                             { id: 'holiday_closed', label: 'Store closed', color: 'text-red-700 hover:bg-red-50' },
-                                            { id: 'holiday_short', label: 'Short opening hours', color: 'text-blue-700 hover:bg-blue-50' },
+                                            { id: 'holiday_short_paid', label: 'Short hours (holiday – paid)', color: 'text-blue-700 hover:bg-blue-50' },
+                                            { id: 'holiday_short_unpaid', label: 'Short hours (no extra pay)', color: 'text-slate-600 hover:bg-slate-100' },
                                         ].map(opt => (
                                             <button
                                                 key={opt.id}
@@ -220,7 +223,7 @@ export const SpecialDaysCalendar: React.FC<SpecialDaysCalendarProps> = ({
                                         ))}
                                     </div>
 
-                                    {data.type === 'holiday_short' && (
+                                    {(data.type === 'holiday_short_paid' || data.type === 'holiday_short_unpaid') && (
                                         <div className="p-3 bg-slate-50 border-t border-slate-100 space-y-2">
                                             <div className="flex items-center justify-between text-xs">
                                                 <span className="text-slate-600">Open from</span>

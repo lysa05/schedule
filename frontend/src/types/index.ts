@@ -43,7 +43,7 @@ export interface SolveResponse {
     understaffed: UnderstaffedDay[];
 }
 
-export type DayType = "normal" | "busy" | "holiday_closed" | "holiday_open" | "holiday_short";
+export type DayType = "normal" | "busy" | "holiday_closed" | "holiday_open" | "holiday_short_paid" | "holiday_short_unpaid";
 
 export interface SpecialDayInput {
     day: number;
