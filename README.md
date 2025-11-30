@@ -1,5 +1,7 @@
 # Smart Shift Scheduler
 
+[![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](https://lysa05.github.io/schedule/)
+
 A Python-based automated shift scheduling tool designed for retail stores. It handles complex constraints, fair workload balancing, and smart staffing calculations.
 
 ## 🚀 Features
