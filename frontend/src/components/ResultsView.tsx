@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import type { SolveResponse, ScheduleShift } from '../types';
+import type { SolveResponse, ScheduleShift, EmployeeInput, SpecialDayInput } from '../types';
 
 interface ResultsViewProps {
     results: SolveResponse;
     month: number;
     year: number;
     onUpdateResults: (newResults: SolveResponse) => void;
+    inputEmployees: EmployeeInput[];
+    specialDays: SpecialDayInput[];
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -18,7 +20,9 @@ const TIME_OPTIONS = Array.from({ length: 35 }, (_, i) => {
     return `${h.toString().padStart(2, '0')}:${m}`;
 });
 
-export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year, onUpdateResults }) => {
+export const ResultsView: React.FC<ResultsViewProps> = ({
+    results, month, year, onUpdateResults, inputEmployees, specialDays
+}) => {
     const [activeTab, setActiveTab] = useState<'summary' | 'by_day' | 'by_employee'>('summary');
     const [editingShift, setEditingShift] = useState<{ day: number, empName: string, shift: ScheduleShift | null } | null>(null);
 
@@ -36,6 +40,20 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year, 
             return results.schedule[dayStr][empName];
         }
         return null;
+    };
+
+    const getEmployeeInput = (empName: string) => {
+        return inputEmployees.find(e => e.name === empName);
+    };
+
+    const getSpecialDay = (day: number) => {
+        return specialDays.find(d => d.day === day);
+    };
+
+    const getPaidHoursCredit = (fte: number) => {
+        if (fte >= 1.0) return 8;
+        if (fte >= 0.75) return 6;
+        return 4;
     };
 
     const handleEditClick = (day: number, empName: string, shift: ScheduleShift | null) => {
@@ -226,53 +244,135 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ results, month, year, 
                 )}
 
                 {activeTab === 'by_day' && (
-                    <div className="overflow-x-auto pb-20"> {/* Padding for popover space */}
-                        <table className="w-full text-sm text-left border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="p-2 border-b border-slate-200 bg-slate-50 sticky left-0 z-10 w-20">Day</th>
-                                    {results.employees.map((emp, i) => (
-                                        <th key={i} className="p-2 border-b border-slate-200 bg-slate-50 min-w-[100px]">{emp.name}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {days.map(day => {
-                                    const weekday = getWeekday(day);
-                                    return (
-                                        <tr key={day} className="hover:bg-slate-50 border-b border-slate-100">
-                                            <td className="p-2 font-medium text-slate-900 sticky left-0 bg-white border-r border-slate-100">
-                                                {day} <span className="text-xs text-slate-400 font-normal ml-1">{weekday}</span>
-                                            </td>
-                                            {results.employees.map((emp, i) => {
-                                                const shift = getShiftForEmployee(day, emp.name);
-                                                return (
-                                                    <td
-                                                        key={i}
-                                                        className="p-2 border-r border-slate-50 last:border-0 cursor-pointer hover:bg-slate-100 transition-colors"
-                                                        onClick={() => handleEditClick(day, emp.name, shift)}
-                                                    >
-                                                        {shift ? (
-                                                            <div className={`text-xs p-1 rounded border ${shift.type === 'OPEN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                                                shift.type === 'CLOSE' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                                                    shift.type === 'FLEX' ? 'bg-teal-100 text-teal-800 border-teal-200' :
-                                                                        shift.type === 'MANUAL' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                                                                            'bg-slate-100 text-slate-800 border-slate-200'
-                                                                }`}>
-                                                                <div className="font-semibold">{shift.start} - {shift.end}</div>
-                                                                <div className="text-[10px] opacity-75">{shift.type}</div>
+                    <div className="space-y-6">
+                        <div className="overflow-x-auto pb-20"> {/* Padding for popover space */}
+                            <table className="w-full text-sm text-left border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th className="p-2 border-b border-slate-200 bg-slate-50 sticky left-0 z-10 w-20">Day</th>
+                                        {results.employees.map((emp, i) => (
+                                            <th key={i} className="p-2 border-b border-slate-200 bg-slate-50 min-w-[100px]">{emp.name}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {days.map(day => {
+                                        const weekday = getWeekday(day);
+                                        const specialDay = getSpecialDay(day);
+
+                                        return (
+                                            <tr key={day} className="hover:bg-slate-50 border-b border-slate-100">
+                                                <td className="p-2 font-medium text-slate-900 sticky left-0 bg-white border-r border-slate-100">
+                                                    {day} <span className="text-xs text-slate-400 font-normal ml-1">{weekday}</span>
+                                                </td>
+                                                {results.employees.map((emp, i) => {
+                                                    const shift = getShiftForEmployee(day, emp.name);
+                                                    const empInput = getEmployeeInput(emp.name);
+
+                                                    // Determine status
+                                                    const isUnavailable = empInput?.unavailableDays.includes(day);
+                                                    const isVacation = empInput?.vacationDays.includes(day);
+                                                    const isHolidayClosed = specialDay?.type === 'holiday_closed';
+                                                    const isHolidayOpen = specialDay?.type === 'holiday_open';
+
+                                                    const credit = empInput ? getPaidHoursCredit(empInput.contractFte) : 8;
+
+                                                    return (
+                                                        <td
+                                                            key={i}
+                                                            className="p-2 border-r border-slate-50 last:border-0 cursor-pointer hover:bg-slate-100 transition-colors align-top"
+                                                            onClick={() => handleEditClick(day, emp.name, shift)}
+                                                        >
+                                                            <div className="flex flex-col gap-1 items-center">
+                                                                {shift ? (
+                                                                    <div className={`relative text-xs p-1 rounded border w-full text-center ${shift.type === 'OPEN' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                                                        shift.type === 'CLOSE' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                                                            shift.type === 'FLEX' ? 'bg-teal-100 text-teal-800 border-teal-200' :
+                                                                                shift.type === 'MANUAL' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                                                                    'bg-slate-100 text-slate-800 border-slate-200'
+                                                                        } ${isUnavailable ? 'ring-2 ring-red-400 ring-offset-1' : ''}`}
+                                                                        title={isUnavailable ? "Employee requested this day as unavailable" : ""}
+                                                                    >
+                                                                        <div className="font-semibold">{shift.start} - {shift.end}</div>
+                                                                        <div className="text-[10px] opacity-75">{shift.type}</div>
+                                                                        {isUnavailable && (
+                                                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        {/* No Shift - Show status pills */}
+                                                                        {isUnavailable && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium border border-red-200">
+                                                                                UNAVAILABLE
+                                                                            </span>
+                                                                        )}
+                                                                        {isVacation && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium border border-orange-200" title="Paid vacation">
+                                                                                VACATION {credit}h
+                                                                            </span>
+                                                                        )}
+                                                                        {isHolidayClosed && !isVacation && ( // Vacation takes precedence usually? Or holiday? Let's assume holiday overrides vacation if store closed? Or vacation is paid anyway.
+                                                                            // If store is closed, everyone gets holiday pay usually, unless on vacation.
+                                                                            // If on vacation during holiday, usually it counts as holiday not vacation day deducted.
+                                                                            // But for simplicity, let's just show what is in data.
+                                                                            // If user marked vacation on a closed holiday, it's weird.
+                                                                            // Let's show Holiday if closed.
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 font-medium border border-red-200" title="Store closed - Paid holiday">
+                                                                                HOLIDAY {credit}h
+                                                                            </span>
+                                                                        )}
+                                                                        {isHolidayOpen && !isVacation && !isUnavailable && (
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium border border-purple-200" title="Store open - Paid holiday">
+                                                                                HOLIDAY PAID {credit}h
+                                                                            </span>
+                                                                        )}
+                                                                        {!isUnavailable && !isVacation && !isHolidayClosed && !isHolidayOpen && (
+                                                                            <span className="text-slate-300 text-xs">-</span>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {/* Badges for working on holiday */}
+                                                                {shift && isHolidayOpen && (
+                                                                    <span className="text-[9px] px-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200 font-medium">
+                                                                        HOLIDAY +{credit}h
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        ) : (
-                                                            <span className="text-slate-300 text-xs block text-center">-</span>
-                                                        )}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex flex-wrap gap-4 text-xs text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div>
+                                <span>Worked shift</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-orange-100 border border-orange-200 rounded"></div>
+                                <span>Vacation (paid)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+                                <span>Holiday - store closed (paid)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-purple-100 border border-purple-200 rounded"></div>
+                                <span>Holiday - store open (paid)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-red-100 border border-red-200 rounded opacity-50"></div>
+                                <span>Unavailable / Day off</span>
+                            </div>
+                        </div>
                     </div>
                 )}
 

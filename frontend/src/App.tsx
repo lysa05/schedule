@@ -147,6 +147,8 @@ const App: React.FC = () => {
               month={month}
               year={year}
               onUpdateResults={setResults}
+              inputEmployees={employees}
+              specialDays={specialDays}
             />
           </div>
         )}
