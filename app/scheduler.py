@@ -330,6 +330,10 @@ def solve_schedule(data_input):
         min_openers = config.get('min_openers', 1)
         min_closers = config.get('min_closers', 1)
         
+        # Safety: Ensure min constraints don't exceed total staff
+        if min_openers > req_staff: min_openers = req_staff
+        if min_closers > req_staff: min_closers = req_staff
+        
         target_open = max(min_openers, int(round(req_staff * open_ratio)))
         target_close = max(min_closers, int(round(req_staff * close_ratio)))
         target_middle = req_staff - target_open - target_close

@@ -111,9 +111,11 @@ def transform_request(req: SolveRequest) -> Dict[str, Any]:
                 "open": sd.openTime or "08:30",
                 "staff": sd.staffOverride or 3
             }
-        elif sd.type == "holiday_short":
+        elif sd.type in ("holiday_short", "holiday_short_paid", "holiday_short_unpaid"):
             open_holidays.append(sd.day)
+            # Pass the specific type through so scheduler can use it if needed (e.g. for paid/unpaid logic)
             special_days[day_str] = {
+                "type": sd.type,
                 "close": sd.closeTime or "16:00", 
                 "open": sd.openTime or "08:30",
                 "staff": sd.staffOverride or 2
