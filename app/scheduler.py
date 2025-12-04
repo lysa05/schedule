@@ -102,10 +102,13 @@ def calculate_monthly_staffing(employees, year, month, config, heavy_days):
     missing = total_shifts - current_total
     
     # Sort days by remainder (descending)
-    # If remainders are equal (e.g. uniform weights), this will pick days 1..N
-    # To make it fair/random for uniform case, we could shuffle, but stable sort is fine for now.
-    # Maybe prioritize Fridays/Saturdays slightly even in uniform mode if we wanted, but let's stick to math.
-    sorted_days = sorted(remainders.keys(), key=lambda d: remainders[d], reverse=True)
+    # To avoid front-loading (1, 2, 3...) when remainders are equal, we shuffle the keys first.
+    # This ensures that "ties" in remainder values are broken randomly.
+    import random
+    days_list = list(remainders.keys())
+    random.shuffle(days_list)
+    
+    sorted_days = sorted(days_list, key=lambda d: remainders[d], reverse=True)
     
     for i in range(missing):
         day = sorted_days[i % num_days]
@@ -195,9 +198,10 @@ def generate_shift_templates(day, special_days, default_open=8.5, default_close=
              else:
                  cost = 100
                  
-             # Penalize half-hour starts slightly
+             # Penalize half-hour starts HEAVILY for closers
+             # User dislikes 11:30, 12:30 starts.
              if start % 1 != 0:
-                 cost += 2
+                 cost += 50 # Was 2. Now 50 to strongly discourage unless necessary.
              
              # STRICT RULE: Any shift ending at close_time is a CLOSE shift (or OPEN if it covers full day)
              # We already added OPENs above. If an OPEN shift ends at close_time, it's fine to be called OPEN 
