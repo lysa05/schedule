@@ -87,11 +87,7 @@ def calculate_monthly_staffing(employees, year, month, config, heavy_days):
         day_weights[day] = weight
         total_weight += weight
         
-    # 3. Distribute Shifts (Largest Remainder Method)
-    allocations = {}
-    remainders = {}
-    current_total = 0
-    
+
     # 3. Distribute Shifts (Largest Remainder Method)
     allocations = {}
     remainders = {}
