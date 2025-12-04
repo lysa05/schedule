@@ -92,6 +92,21 @@ def calculate_monthly_staffing(employees, year, month, config, heavy_days):
     remainders = {}
     current_total = 0
     
+    # 3. Distribute Shifts (Largest Remainder Method)
+    allocations = {}
+    remainders = {}
+    current_total = 0
+    
+    # Calculate available staff per day to avoid artificial deficits
+    available_per_day = {}
+    for day in range(1, num_days + 1):
+        count = 0
+        for emp in employees:
+            # Check if employee is available
+            if day not in emp.get('unavailable_days', []) and day not in emp.get('vacation_days', []):
+                count += 1
+        available_per_day[day] = count
+    
     for day in range(1, num_days + 1):
         share = total_shifts * (day_weights[day] / total_weight)
         allocations[day] = int(share)
@@ -103,15 +118,74 @@ def calculate_monthly_staffing(employees, year, month, config, heavy_days):
     
     # Sort days by remainder (descending)
     # To avoid front-loading (1, 2, 3...) when remainders are equal, we shuffle the keys first.
-    # This ensures that "ties" in remainder values are broken randomly.
     import random
     days_list = list(remainders.keys())
     random.shuffle(days_list)
     
     sorted_days = sorted(days_list, key=lambda d: remainders[d], reverse=True)
     
+    # Try to assign to days that have headroom (allocation < available)
+    assigned_count = 0
+    
+    # Pass 1: Fill days with headroom first
+    for day in sorted_days:
+        if assigned_count >= missing:
+            break
+        
+        # Check if we have room to add a shift without creating a deficit
+        # (unless the base allocation already exceeds availability, which we can't help)
+        if allocations[day] < available_per_day[day]:
+            allocations[day] += 1
+            assigned_count += 1
+            
+    # Pass 2: If we still have missing shifts (because all days are full?), force assign
+    # This ensures we burn the hours fund even if it causes a deficit (which is true understaffing)
+    if assigned_count < missing:
+        remaining_missing = missing - assigned_count
+        # We just loop again and force assign to the highest remainders that weren't picked?
+        # Or just simple round-robin on sorted_days
+        for i in range(remaining_missing):
+            day = sorted_days[i % num_days]
+            # We already incremented some in Pass 1, so we need to be careful not to double dip 
+            # if we iterate blindly. 
+            # Actually, simpler logic:
+            # We need to pick 'missing' indices from sorted_days.
+            # We prefer indices where allocations[day] < available.
+            # Let's re-sort or just pick intelligently.
+            pass
+            
+    # Refined Logic for Pass 2:
+    # Let's restart the distribution with a smarter list.
+    # We want to pick 'missing' number of days.
+    # Priority 1: High Remainder AND Headroom.
+    # Priority 2: High Remainder (Force).
+    
+    # Let's build a priority score: remainder + (10 if headroom else 0)
+    # This prioritizes headroom above all else, then remainder.
+    
+    priority_scores = []
+    for day in days_list:
+        score = remainders[day]
+        if allocations[day] < available_per_day[day]:
+            score += 10.0
+        priority_scores.append((day, score))
+        
+    # Sort by score descending
+    priority_scores.sort(key=lambda x: x[1], reverse=True)
+    
+    # Reset allocations to base and apply top N
+    # Wait, we modified allocations in Pass 1 above. Let's revert/clean up logic.
+    # Re-calculating cleanly:
+    
+    current_total = 0
+    for day in range(1, num_days + 1):
+        allocations[day] = int(total_shifts * (day_weights[day] / total_weight))
+        current_total += allocations[day]
+        
+    missing = total_shifts - current_total
+    
     for i in range(missing):
-        day = sorted_days[i % num_days]
+        day = priority_scores[i][0]
         allocations[day] += 1
         
     # 4. Apply Heavy Days (Extra Staff)
