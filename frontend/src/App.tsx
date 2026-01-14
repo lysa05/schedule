@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SpecialDaysCalendar } from './components/SpecialDaysCalendar';
 import { StoreConfiguration } from './components/StoreConfiguration';
 import { GenerateSection } from './components/GenerateSection';
@@ -8,34 +8,72 @@ import type { SolveResponse, SpecialDayInput, EmployeeInput, SolveRequest } from
 // API URL determined by environment (Development = Localhost, Production = Render)
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/solve";
 
+const STORAGE_KEY = 'scheduler_state';
+
+// Helper to load state from localStorage
+const loadState = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Failed to load state from localStorage:', e);
+  }
+  return null;
+};
+
 const App: React.FC = () => {
+  // Load saved state on init
+  const savedState = loadState();
+
   // State
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(savedState?.month ?? new Date().getMonth() + 1);
+  const [year] = useState(savedState?.year ?? new Date().getFullYear());
 
-  const [specialDays, setSpecialDays] = useState<SpecialDayInput[]>([]);
-  const [defaultOpenTime, setDefaultOpenTime] = useState("08:30");
-  const [defaultCloseTime, setDefaultCloseTime] = useState("21:00");
+  const [specialDays, setSpecialDays] = useState<SpecialDayInput[]>(savedState?.specialDays ?? []);
+  const [defaultOpenTime, setDefaultOpenTime] = useState(savedState?.defaultOpenTime ?? "08:30");
+  const [defaultCloseTime, setDefaultCloseTime] = useState(savedState?.defaultCloseTime ?? "21:00");
 
-  const [fulltimeHours, setFulltimeHours] = useState(184);
-  const [employees, setEmployees] = useState<EmployeeInput[]>([
+  const [fulltimeHours, setFulltimeHours] = useState(savedState?.fulltimeHours ?? 184);
+  const [employees, setEmployees] = useState<EmployeeInput[]>(savedState?.employees ?? [
     { id: '1', name: 'Kuba', role: 'manager', contractFte: 1.0, unavailableDays: [], vacationDays: [] },
     { id: '2', name: 'Andrii', role: 'deputy', contractFte: 1.0, unavailableDays: [], vacationDays: [] },
     { id: '3', name: 'Almaz', role: 'supervisor', contractFte: 1.0, unavailableDays: [], vacationDays: [] },
     { id: '4', name: 'Misa', role: 'assistant', contractFte: 0.5, unavailableDays: [], vacationDays: [] },
   ]);
 
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState(savedState?.config ?? {
     autoStaffing: true,
     busyWeekends: true
   });
 
-  const [results, setResults] = useState<SolveResponse | null>(null);
+  const [results, setResults] = useState<SolveResponse | null>(savedState?.results ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
 
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    const state = {
+      month,
+      year,
+      specialDays,
+      defaultOpenTime,
+      defaultCloseTime,
+      fulltimeHours,
+      employees,
+      config,
+      results
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.error('Failed to save state to localStorage:', e);
+    }
+  }, [month, year, specialDays, defaultOpenTime, defaultCloseTime, fulltimeHours, employees, config, results]);
 
   const handleGenerate = async () => {
     setLoading(true);
