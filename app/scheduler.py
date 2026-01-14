@@ -779,6 +779,7 @@ def solve_schedule(data_input):
         # Build schedule dict
         schedule = {}
         employee_work_hours = {i: 0.0 for i in range(len(employees))}
+        daily_staff_counts = {}  # Track actual staff per day
         
         for day in range(1, num_days + 1):
             if day in closed_holidays: continue
@@ -792,6 +793,32 @@ def solve_schedule(data_input):
                             employee_work_hours[i] += template['duration']
                             
             schedule[day] = daily_shifts
+            daily_staff_counts[day] = len(daily_shifts)
+            
+        # Check for understaffing in the actual solution
+        for day in range(1, num_days + 1):
+            if day in closed_holidays: 
+                continue
+            
+            req_staff = monthly_staff_reqs.get(day, 2)
+            if str(day) in special_days:
+                req_staff = special_days[str(day)].get('staff', req_staff)
+                
+            actual = daily_staff_counts.get(day, 0)
+            
+            if actual < req_staff and day not in understaff_info:
+                # This day was understaffed by solver choice (not availability)
+                available_count = 0
+                for i, emp in enumerate(employees):
+                    if day not in emp.get('unavailable_days', []) and day not in emp.get('vacation_days', []):
+                        available_count += 1
+                        
+                understaff_info[day] = {
+                    "needed": req_staff,
+                    "available": available_count,
+                    "actual": actual,
+                    "deficit": req_staff - actual
+                }
             
         # Format schedule for return
         # We need a JSON serializable format.
