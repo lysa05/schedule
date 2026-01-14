@@ -56,6 +56,38 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         return 4;
     };
 
+    // Calculate understaffed days dynamically based on current schedule
+    const getUnderstaffedDays = () => {
+        const understaffed: { day: number; needed: number; actual: number; deficit: number }[] = [];
+
+        // Minimum staff per day (can be made configurable)
+        const minStaffPerDay = 2;
+
+        days.forEach(day => {
+            const dayStr = day.toString();
+            const daySchedule = results.schedule[dayStr] || {};
+            const actualStaff = Object.keys(daySchedule).length;
+
+            // Check for special day requirements
+            const sd = getSpecialDay(day);
+            let neededStaff = sd?.staffOverride || minStaffPerDay;
+
+            if (actualStaff < neededStaff) {
+                understaffed.push({
+                    day,
+                    needed: neededStaff,
+                    actual: actualStaff,
+                    deficit: neededStaff - actualStaff
+                });
+            }
+        });
+
+        return understaffed;
+    };
+
+    // Get dynamic understaffed days (recalculated on each render)
+    const dynamicUnderstaffed = getUnderstaffedDays();
+
     const handleEditClick = (day: number, empName: string, shift: ScheduleShift | null) => {
         setEditingShift({ day, empName, shift });
     };
@@ -228,13 +260,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                             </div>
                         </div>
 
-                        {results.understaffed.length > 0 && (
+                        {dynamicUnderstaffed.length > 0 && (
                             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <h3 className="text-sm font-semibold text-red-800 mb-2">Understaffed Days</h3>
+                                <h3 className="text-sm font-semibold text-red-800 mb-2">⚠️ Understaffed Days (Need Help from Other Stores)</h3>
                                 <ul className="list-disc list-inside text-sm text-red-700">
-                                    {results.understaffed.map((u, i) => (
+                                    {dynamicUnderstaffed.map((u, i) => (
                                         <li key={i}>
-                                            Day {u.day}: Needed {u.needed}, Available {u.available} (Deficit: {u.deficit})
+                                            Day {u.day}: Needed {u.needed}, Actual {u.actual} (Deficit: {u.deficit})
                                         </li>
                                     ))}
                                 </ul>

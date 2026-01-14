@@ -411,6 +411,10 @@ def solve_schedule(data_input):
     manager_roles = config.get('manager_roles', ["manager", "deputy", "supervisor"])
     manager_ids = [i for i, emp in enumerate(employees) if emp.get('role') in manager_roles]
     
+    # Separate penalty lists for proper weighting
+    staffing_penalties = []  # High weight - understaffing is critical
+    manager_penalties = []   # Medium weight - manager on Monday
+    
     for day in range(1, num_days + 1):
         if day in closed_holidays: continue
         
@@ -495,7 +499,7 @@ def solve_schedule(data_input):
         understaff_var = model.NewIntVar(0, len(employees), f'understaff_{day}')
         model.Add(understaff_var >= req_staff - actual_staff)
         model.Add(understaff_var >= 0)
-        day_shape_vars.append(understaff_var)  # Will be weighted heavily
+        staffing_penalties.append(understaff_var)  # HIGH WEIGHT - understaffing is critical
         
         # Manager on Mondays - SOFT constraint
         weekday = calendar.weekday(year, month, day)
@@ -511,19 +515,19 @@ def solve_schedule(data_input):
                 no_manager = model.NewBoolVar(f'no_manager_{day}')
                 model.Add(sum(management_vars) == 0).OnlyEnforceIf(no_manager)
                 model.Add(sum(management_vars) >= 1).OnlyEnforceIf(no_manager.Not())
-                day_shape_vars.append(no_manager)  # Penalize missing manager
+                manager_penalties.append(no_manager)  # MEDIUM WEIGHT
         
         # Min Openers/Closers - SOFT constraint
         # Track violations for penalty
         opener_deficit = model.NewIntVar(0, min_openers, f'opener_deficit_{day}')
         model.Add(opener_deficit >= min_openers - sum(openers))
         model.Add(opener_deficit >= 0)
-        day_shape_vars.append(opener_deficit)
+        staffing_penalties.append(opener_deficit)  # HIGH WEIGHT
         
         closer_deficit = model.NewIntVar(0, min_closers, f'closer_deficit_{day}')
         model.Add(closer_deficit >= min_closers - sum(closers))
         model.Add(closer_deficit >= 0)
-        day_shape_vars.append(closer_deficit)
+        staffing_penalties.append(closer_deficit)  # HIGH WEIGHT
         
         # Day Shape Soft Constraints
         o_day = model.NewIntVar(0, req_staff, f'openers_day_{day}')
@@ -722,9 +726,11 @@ def solve_schedule(data_input):
     w_hours = weights.get('work_hours', 1000)
     w_shape = weights.get('day_shape', 80)
     w_cost = weights.get('shift_cost', 5)
-    w_fair = weights.get('open_close_fairness', 3) # Was 5
+    w_fair = weights.get('open_close_fairness', 50)  # Increased from 3 for better balance
     w_clopen = weights.get('clopen', 15)
-    w_consecutive = weights.get('consecutive_days', 500) # High penalty for 5+ consecutive days
+    w_consecutive = weights.get('consecutive_days', 500)
+    w_staffing = weights.get('staffing', 2000)  # VERY HIGH - understaffing is critical
+    w_manager = weights.get('manager', 300)  # Manager on Monday
     
     model.Minimize(
         sum(obj_vars) * w_hours + 
@@ -732,7 +738,9 @@ def solve_schedule(data_input):
         sum(day_shape_vars) * w_shape + 
         sum(fairness_vars) * w_fair +
         sum(clopen_vars) * w_clopen +
-        sum(consecutive_violations) * w_consecutive
+        sum(consecutive_violations) * w_consecutive +
+        sum(staffing_penalties) * w_staffing +
+        sum(manager_penalties) * w_manager
     )
     
     # Solve
