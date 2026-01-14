@@ -486,9 +486,18 @@ def solve_schedule(data_input):
                     if template['type'] == 'FLEX':
                         middles.append(var)
                         
-        model.Add(sum(day_shifts) == req_staff)
+        # Daily Staffing - SOFT constraint (allow understaffing with penalty)
+        # We want at least min(req_staff, available_count) but prefer req_staff
+        actual_staff = model.NewIntVar(0, len(employees), f'actual_staff_{day}')
+        model.Add(actual_staff == sum(day_shifts))
         
-        # Manager on Mondays
+        # Penalize understaffing (difference from req_staff)
+        understaff_var = model.NewIntVar(0, len(employees), f'understaff_{day}')
+        model.Add(understaff_var >= req_staff - actual_staff)
+        model.Add(understaff_var >= 0)
+        day_shape_vars.append(understaff_var)  # Will be weighted heavily
+        
+        # Manager on Mondays - SOFT constraint
         weekday = calendar.weekday(year, month, day)
         if weekday == 0: # Monday
             management_vars = []
@@ -498,11 +507,23 @@ def solve_schedule(data_input):
                         management_vars.append(work[(i, day, s_idx)])
             
             if management_vars:
-                model.Add(sum(management_vars) >= 1)
+                # Soft: Create violation variable if no manager
+                no_manager = model.NewBoolVar(f'no_manager_{day}')
+                model.Add(sum(management_vars) == 0).OnlyEnforceIf(no_manager)
+                model.Add(sum(management_vars) >= 1).OnlyEnforceIf(no_manager.Not())
+                day_shape_vars.append(no_manager)  # Penalize missing manager
         
-        # Min Openers/Closers (Hard Constraint)
-        model.Add(sum(openers) >= min_openers)
-        model.Add(sum(closers) >= min_closers)
+        # Min Openers/Closers - SOFT constraint
+        # Track violations for penalty
+        opener_deficit = model.NewIntVar(0, min_openers, f'opener_deficit_{day}')
+        model.Add(opener_deficit >= min_openers - sum(openers))
+        model.Add(opener_deficit >= 0)
+        day_shape_vars.append(opener_deficit)
+        
+        closer_deficit = model.NewIntVar(0, min_closers, f'closer_deficit_{day}')
+        model.Add(closer_deficit >= min_closers - sum(closers))
+        model.Add(closer_deficit >= 0)
+        day_shape_vars.append(closer_deficit)
         
         # Day Shape Soft Constraints
         o_day = model.NewIntVar(0, req_staff, f'openers_day_{day}')
