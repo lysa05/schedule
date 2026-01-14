@@ -543,8 +543,8 @@ def solve_schedule(data_input):
         
         day_shape_vars.extend([o_dev, c_dev, m_dev])
         
-    # 3. Consecutive Days (Max 4)
-    # Optimization: Create worked_day variables once
+    # 3. Consecutive Days (Soft Constraint - Max 4, penalize 5+)
+    # First, create worked_day variables
     worked_days = {} # (i, day) -> BoolVar
     
     for i in range(len(employees)):
@@ -561,7 +561,9 @@ def solve_schedule(data_input):
                 wd = model.NewBoolVar(f'worked_{i}_{day}')
                 model.Add(sum(day_vars) == wd)
                 worked_days[(i, day)] = wd
-
+    
+    consecutive_violations = []
+    
     for i in range(len(employees)):
         for day in range(1, num_days - 3): 
             window_vars = []
@@ -570,7 +572,12 @@ def solve_schedule(data_input):
                     window_vars.append(worked_days[(i, d)])
             
             if len(window_vars) == 5:
-                model.Add(sum(window_vars) <= 4)
+                # Create a violation variable: 1 if all 5 days are worked
+                violation = model.NewBoolVar(f'consecutive_violation_{i}_{day}')
+                # violation = 1 if sum(window_vars) == 5
+                model.Add(sum(window_vars) == 5).OnlyEnforceIf(violation)
+                model.Add(sum(window_vars) < 5).OnlyEnforceIf(violation.Not())
+                consecutive_violations.append(violation)
                 
     # 4. Soft Clopen Ban
     clopen_vars = []
@@ -696,13 +703,15 @@ def solve_schedule(data_input):
     w_cost = weights.get('shift_cost', 5)
     w_fair = weights.get('open_close_fairness', 3) # Was 5
     w_clopen = weights.get('clopen', 15)
+    w_consecutive = weights.get('consecutive_days', 500) # High penalty for 5+ consecutive days
     
     model.Minimize(
         sum(obj_vars) * w_hours + 
         sum(cost_vars) * w_cost + 
         sum(day_shape_vars) * w_shape + 
         sum(fairness_vars) * w_fair +
-        sum(clopen_vars) * w_clopen
+        sum(clopen_vars) * w_clopen +
+        sum(consecutive_violations) * w_consecutive
     )
     
     # Solve
@@ -727,7 +736,8 @@ def solve_schedule(data_input):
         "objective_value": solver.ObjectiveValue(),
         "schedule": {},
         "employees": [],
-        "understaffed": []
+        "understaffed": [],
+        "consecutive_violations": []
     }
 
     if understaff_info:
@@ -816,6 +826,35 @@ def solve_schedule(data_input):
             })
             
         result["employees"] = emp_stats
+        
+        # Check for consecutive day violations (5+ days worked in a row)
+        for i, emp in enumerate(employees):
+            consecutive_count = 0
+            start_streak = None
+            for day in range(1, num_days + 1):
+                worked_today = day in [d for d, shifts in schedule.items() if i in shifts]
+                if worked_today:
+                    if consecutive_count == 0:
+                        start_streak = day
+                    consecutive_count += 1
+                else:
+                    if consecutive_count >= 5:
+                        result["consecutive_violations"].append({
+                            "employee": emp['name'],
+                            "start_day": start_streak,
+                            "end_day": day - 1,
+                            "count": consecutive_count
+                        })
+                    consecutive_count = 0
+                    start_streak = None
+            # Check at month end
+            if consecutive_count >= 5:
+                result["consecutive_violations"].append({
+                    "employee": emp['name'],
+                    "start_day": start_streak,
+                    "end_day": num_days,
+                    "count": consecutive_count
+                })
         
     else:
         print("No solution found.")

@@ -5,9 +5,8 @@ import { GenerateSection } from './components/GenerateSection';
 import { ResultsView } from './components/ResultsView';
 import type { SolveResponse, SpecialDayInput, EmployeeInput, SolveRequest } from './types';
 
-// Production API URL (Render)
-const API_URL = "https://scheduler-api-wsfi.onrender.com/solve";
-// const API_URL = "http://localhost:8000/solve"; // Localhost for dev
+// API URL determined by environment (Development = Localhost, Production = Render)
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/solve";
 
 const App: React.FC = () => {
   // State
